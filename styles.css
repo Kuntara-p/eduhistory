@@ -475,3 +475,58 @@ body, button, input, select, textarea {
   scrollbar-width: none;
 }
 
+/* ========================================================
+   MOBILE, IPAD & PWA ERGONOMICS (Home Screen Pinning)
+   ======================================================== */
+
+/* iOS Safe Area Insets for Notch & Home Indicator */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  nav.lg\:hidden {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.35rem) !important;
+  }
+  header {
+    padding-top: calc(env(safe-area-inset-top) + 0.35rem) !important;
+  }
+}
+
+/* Prevent unwanted double-tap zoom & optimize touch response */
+button, select, input, .touch-target, .mobile-nav-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth Touch Momentum Scrolling */
+.table-container,
+.overflow-x-auto,
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive Table Adjustments for iPad and Phone */
+@media (max-width: 1024px) {
+  .table-container {
+    max-height: calc(100vh - 240px);
+  }
+  header h1 {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .table-container {
+    max-height: calc(100vh - 210px);
+  }
+}
+
+/* Fullscreen Standalone App Mode (When pinned to Home Screen) */
+@media all and (display-mode: standalone) {
+  body {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  input, textarea, [contenteditable="true"] {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+}
+

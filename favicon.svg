@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="50%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="pillar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="50%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded rect -->
+  <rect width="512" height="512" rx="115" fill="url(#bg)"/>
+
+  <!-- Subtle border glow -->
+  <rect x="8" y="8" width="496" height="496" rx="107" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="4"/>
+
+  <!-- Pantheon Historical Temple -->
+  <g filter="url(#shadow)">
+    <!-- Triangular Roof / Pediment -->
+    <polygon points="256,105 105,190 407,190" fill="url(#gold)"/>
+    <polygon points="256,125 130,185 382,185" fill="#ffffff" opacity="0.2"/>
+
+    <!-- Emblem in pediment -->
+    <circle cx="256" cy="162" r="16" fill="#ffffff"/>
+    <circle cx="256" cy="162" r="12" fill="#f59e0b"/>
+    <circle cx="256" cy="162" r="6" fill="#ffffff"/>
+
+    <!-- Entablature / Architrave beam -->
+    <rect x="105" y="190" width="302" height="24" rx="4" fill="url(#gold)"/>
+    <rect x="115" y="214" width="282" height="10" fill="#fef08a"/>
+
+    <!-- 4 Fluted Pillars / Columns -->
+    <!-- Column 1 -->
+    <rect x="135" y="224" width="32" height="135" rx="3" fill="url(#pillar)"/>
+    <rect x="131" y="224" width="40" height="8" rx="2" fill="url(#gold)"/>
+    <rect x="131" y="351" width="40" height="8" rx="2" fill="url(#gold)"/>
+
+    <!-- Column 2 -->
+    <rect x="207" y="224" width="32" height="135" rx="3" fill="url(#pillar)"/>
+    <rect x="203" y="224" width="40" height="8" rx="2" fill="url(#gold)"/>
+    <rect x="203" y="351" width="40" height="8" rx="2" fill="url(#gold)"/>
+
+    <!-- Column 3 -->
+    <rect x="273" y="224" width="32" height="135" rx="3" fill="url(#pillar)"/>
+    <rect x="269" y="224" width="40" height="8" rx="2" fill="url(#gold)"/>
+    <rect x="269" y="351" width="40" height="8" rx="2" fill="url(#gold)"/>
+
+    <!-- Column 4 -->
+    <rect x="345" y="224" width="32" height="135" rx="3" fill="url(#pillar)"/>
+    <rect x="341" y="224" width="40" height="8" rx="2" fill="url(#gold)"/>
+    <rect x="341" y="351" width="40" height="8" rx="2" fill="url(#gold)"/>
+
+    <!-- Base Steps (2-tier Stylobate) -->
+    <rect x="110" y="359" width="292" height="20" rx="4" fill="url(#gold)"/>
+    <rect x="90" y="379" width="332" height="26" rx="6" fill="url(#gold)"/>
+  </g>
+
+  <!-- Bottom Brand Text / Pill -->
+  <rect x="156" y="425" width="200" height="34" rx="17" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+  <text x="256" y="448" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="2">EDUSHISTORY</text>
+</svg>
