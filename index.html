@@ -1,0 +1,2774 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full bg-slate-50 text-slate-800">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>EduHistory — ระบบจัดการชั้นเรียนวิชาประวัติศาสตร์ By Kru Por</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- SheetJS for Excel Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Google Fonts: Sarabun (มาตรฐานทางการ สารบรรณ อ่านง่าย ถูกระเบียบราชการ 100%) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600;1,700&display=swap" rel="stylesheet">
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css?v=20261116s">
+</head>
+<body class="h-full flex flex-col bg-slate-50 text-slate-800 antialiased overflow-hidden select-none">
+
+  <!-- ========================================================
+       TOP HEADER (Navigation & Subject Selector)
+       ======================================================== -->
+  <header class="bg-white border-b border-slate-200/90 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 z-30 shrink-0 shadow-xs">
+    
+    <!-- Left: Brand / Title -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 font-bold text-lg">
+        🏛️
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
+          <span>EduHistory</span>
+        </h1>
+        <p class="text-xs text-slate-500">ระบบจัดการชั้นเรียนวิชาประวัติศาสตร์ By Kru Por</p>
+      </div>
+    </div>
+
+    <!-- Right Controls: Subject, Unified Classroom, Semester, Sync Status -->
+    <div class="flex flex-wrap items-center gap-2">
+      
+      <!-- Subject Selector -->
+      <div class="flex items-center bg-slate-100 border border-slate-200/90 rounded-xl px-2.5 py-1">
+        <label for="subject-selector" class="sr-only">วิชา</label>
+        <span class="text-xs text-indigo-700 font-semibold mr-1.5">วิชา:</span>
+        <select id="subject-selector" class="bg-transparent font-bold text-xs sm:text-sm text-slate-800 focus:outline-none cursor-pointer">
+          <option value="history">ประวัติศาสตร์</option>
+          <option value="social">สังคมศึกษาฯ</option>
+        </select>
+      </div>
+
+      <!-- Unified Global Classroom Selector (Single Source of Truth) -->
+      <div class="flex items-center bg-blue-50/70 border border-blue-200/90 rounded-xl px-2.5 py-1 shadow-2xs hover:border-blue-400 transition-colors">
+        <label for="global-classroom-selector" class="sr-only">ห้องเรียน</label>
+        <span class="text-xs text-blue-700 font-bold mr-1.5 flex items-center gap-1">
+          <span>🏫</span> <span>ห้อง:</span>
+        </span>
+        <select id="global-classroom-selector" onchange="handleGlobalClassroomChange(this.value)" class="bg-transparent font-bold text-xs sm:text-sm text-blue-950 focus:outline-none cursor-pointer">
+          <!-- Populated dynamically from state.classrooms -->
+        </select>
+        <!-- Compatibility Hidden Inputs -->
+        <input type="hidden" id="class-selector-grade" value="ป.6" />
+        <input type="hidden" id="class-selector-room" value="1" />
+      </div>
+
+      <!-- Current Semester Display (Auto Active - ไม่มีดรอปดาวน์) -->
+      <div class="hidden sm:flex items-center bg-slate-100 border border-slate-200/90 rounded-xl px-2.5 py-1 gap-1.5 shadow-2xs">
+        <span class="text-xs text-indigo-700 font-semibold">ภาค:</span>
+        <span id="top-semester-text" class="text-xs sm:text-sm font-bold text-slate-800">ภาคเรียนที่ 1</span>
+        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-300 px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-2xs" title="ระบบปรับอัตโนมัติตามวันนี้">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          Auto Active
+        </span>
+        <input type="hidden" id="semester-selector" value="1" />
+      </div>
+
+      <!-- Sync Status Badge -->
+      <div id="sync-status-badge" class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+        <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+        <span id="sync-status-label">โหมดออฟไลน์</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================
+       MAIN APP WRAPPER (Sidebar + Content Area)
+       ======================================================== -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- Desktop / iPad Sidebar Navigation -->
+        <!-- Desktop / iPad Modern Slim Icon Dock (Option 2 - Minimalist & Task-Based) -->
+    <aside class="hidden lg:flex flex-col w-20 bg-white border-r border-slate-200/90 py-3 px-1.5 shrink-0 items-center justify-between shadow-xs select-none z-20">
+      
+      <!-- Top Brand Icon -->
+      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-lg shadow-md shadow-blue-500/20 shrink-0 mb-2 cursor-pointer" title="ระบบจัดการชั้นเรียน">
+        🏛️
+      </div>
+
+      <!-- Scrollable Task-Based Icon List (Groups categorized with 'งาน...') -->
+      <div class="flex-1 w-full flex flex-col items-center space-y-2.5 overflow-y-auto no-scrollbar py-1">
+        
+        <!-- แดชบอร์ดภาพรวม (Home / Dashboard) -->
+        <div class="w-full flex flex-col items-center pb-1">
+          <button data-view="dashboard" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center bg-blue-600 text-white shadow-md shadow-blue-500/25 font-bold transition-all cursor-pointer">
+            <span class="text-xl">🏠</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">แดชบอร์ด</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              ภาพรวม: แดชบอร์ดและศูนย์ควบคุมงานสอน
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+        </div>
+
+        <!-- หมวด 1: งานสอนในคาบ -->
+        <div class="w-full flex flex-col items-center space-y-1">
+          <div class="text-[9px] font-bold text-emerald-600 uppercase tracking-wider text-center py-0.5 w-full border-t border-slate-100">
+            งานสอน
+          </div>
+
+          <!-- 1. บันทึกเวลาเรียน (Daily) -->
+          <button data-view="att_daily" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-all">
+            <span class="text-xl">📝</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">เช็คชื่อ</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              งานสอน: เช็คชื่อและบันทึกเวลาเรียนรายวัน
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+
+          <!-- 2. รายงานประจำเดือน (Monthly Matrix) -->
+          <button data-view="att_monthly" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-all">
+            <span class="text-xl">🗓️</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">รายเดือน</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              งานสอน: ตารางเวลาเรียนประจำเดือน (Matrix)
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+        </div>
+
+        <!-- หมวด 2: งานวัดผลคะแนน -->
+        <div class="w-full flex flex-col items-center space-y-1">
+          <div class="text-[9px] font-bold text-blue-600 uppercase tracking-wider text-center py-0.5 w-full border-t border-slate-100">
+            งานคะแนน
+          </div>
+
+          <!-- 4. โครงสร้างรายวิชา -->
+          <button data-view="curriculum" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-all cursor-pointer">
+            <span class="text-xl">📖</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">โครงสร้าง</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              งานคะแนน: โครงสร้างรายวิชาและตัวชี้วัด
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+
+          <!-- 5. บันทึกคะแนน/ตามงานค้าง -->
+          <button data-view="gradebook" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-all cursor-pointer">
+            <span class="text-xl">🔥</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">คะแนน</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              งานคะแนน: สมุดคะแนนตัวชี้วัด (ปพ.5)
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+
+          <!-- 6. ประเมิน 3 ด้านตามเกณฑ์ สพฐ. -->
+          <button data-view="holistic" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-all cursor-pointer">
+            <span class="text-xl">⭐</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">3 ด้าน</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              ประเมิน 3 ด้าน (คุณลักษณะ / อ่านเขียน / สมรรถนะ)
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+
+          <!-- 7. บันทึกหลังสอน -->
+          <button data-view="lesson_logs" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-all cursor-pointer">
+            <span class="text-xl">📝</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">หลังสอน</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              บันทึกหลังสอนรายคาบ (Lesson Logs)
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+        </div>
+
+        <!-- หมวด 3: งานทะเบียนและห้องเรียน -->
+        <div class="w-full flex flex-col items-center space-y-1">
+          <div class="text-[9px] font-bold text-indigo-600 uppercase tracking-wider text-center py-0.5 w-full border-t border-slate-100">
+            งานทะเบียน
+          </div>
+
+          <!-- 7. จัดการห้องเรียน -->
+          <button data-view="classrooms" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-all">
+            <span class="text-xl">📁</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">ห้องเรียน</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              งานทะเบียน: จัดการโครงสร้างห้องเรียน
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+
+          <!-- 8. จัดการนักเรียน -->
+          <button data-view="students" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-all">
+            <span class="text-xl">👥</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">นักเรียน</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              งานทะเบียน: ทะเบียนนักเรียนและนำเข้ารายชื่อ
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+        </div>
+
+        <!-- หมวด 4: งานเอกสารและตั้งค่า -->
+        <div class="w-full flex flex-col items-center space-y-1">
+          <div class="text-[9px] font-bold text-purple-600 uppercase tracking-wider text-center py-0.5 w-full border-t border-slate-100">
+            งานเอกสาร
+          </div>
+
+          <!-- 9. งานเอกสาร ปพ.5 -->
+          <button data-view="pp5_summary" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-all cursor-pointer">
+            <span class="text-xl">📑</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">ปพ.5</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              งานเอกสาร: แบบสรุปผลการพัฒนาคุณภาพผู้เรียน (ปพ.5)
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+
+          <!-- 10. ตั้งค่าระบบ -->
+          <button data-view="settings" class="nav-btn group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-all">
+            <span class="text-xl">⚙️</span>
+            <span class="text-[9px] font-semibold mt-0.5 tracking-tight truncate max-w-[48px]">ตั้งค่า</span>
+            <!-- Floating Hover Tooltip -->
+            <div class="pointer-events-none absolute left-[68px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-slate-700/50">
+              งานระบบ: ตั้งค่าสถานศึกษา วันหยุด และ Cloud
+              <div class="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700/50"></div>
+            </div>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Bottom Dock: Active Room Pill & Full Backup -->
+      <div class="w-full pt-2 flex flex-col items-center space-y-1.5 border-t border-slate-100 shrink-0">
+        <!-- One-Click Full Backup Icon -->
+        <button 
+          onclick="exportAllSystemExcel()" 
+          class="group relative w-12 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex flex-col items-center justify-center text-xs font-semibold shadow-2xs transition-all hover:scale-105 cursor-pointer"
+        >
+          <span class="text-sm">💾</span>
+          <span class="text-[8px] font-bold text-emerald-800">สำรอง</span>
+          <!-- Floating Hover Tooltip -->
+          <div class="pointer-events-none absolute left-[60px] z-50 hidden group-hover:flex items-center px-2.5 py-1.5 bg-emerald-950 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap border border-emerald-800">
+            สำรองข้อมูลทั้งหมดในระบบ (.xlsx)
+            <div class="absolute -left-1 w-2 h-2 bg-emerald-950 rotate-45 border-l border-b border-emerald-800"></div>
+          </div>
+        </button>
+
+        <!-- Current Room Badge -->
+        <div id="sidebar-current-room-badge" class="badge-classroom text-[10px] px-1 py-0.5 font-bold tracking-tight text-center max-w-[66px] truncate" title="ห้องเรียนที่กำลังใช้งาน">
+          ป.6
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 pb-24 lg:pb-8 relative">
+      
+      <!-- ========================================================
+           VIEW: DASHBOARD (🏠 แดชบอร์ดภาพรวมและศูนย์ควบคุมงานสอน)
+           ======================================================== -->
+      <section id="view-dashboard" class="max-w-6xl mx-auto space-y-6 pb-12">
+        
+        <!-- Header Banner & Current Pulse -->
+        <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-md shadow-blue-500/20 shrink-0">
+              🏠
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">แดชบอร์ดภาพรวมการเรียนการสอน</h2>
+                <span id="dash-grade-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">ห้อง ป.6</span>
+                <span id="dash-term-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">ภาคเรียนที่ 2</span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
+                <span id="dash-subject-name" class="font-medium text-slate-700">วิชาประวัติศาสตร์ (ส 16102)</span>
+                <span>•</span>
+                <span id="dash-today-thai-date" class="font-medium text-blue-700">วันที่ 16 พฤศจิกายน 2569</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Today Attendance Status Box -->
+          <div id="dash-today-attendance-badge" class="flex items-center gap-2 self-start md:self-center">
+            <!-- Rendered dynamically by app.js -->
+          </div>
+        </div>
+
+        <!-- 4 Key Metric Cards (KPIs) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Card 1: นักเรียนในห้องเรียน -->
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-blue-300 transition-all">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">นักเรียนในห้อง</span>
+              <span class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">👥</span>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="dash-stat-students-total" class="text-3xl font-extrabold text-slate-900">-</span>
+              <span class="text-xs text-slate-500">คน</span>
+            </div>
+            <div id="dash-stat-students-detail" class="mt-2 text-xs text-slate-500 flex items-center gap-2">
+              กำลังศึกษา - คน
+            </div>
+          </div>
+
+          <!-- Card 2: อัตราเวลาเรียนเฉลี่ย -->
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-emerald-300 transition-all">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">เวลาเรียนเฉลี่ย</span>
+              <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">⏱️</span>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="dash-stat-att-rate" class="text-3xl font-extrabold text-emerald-600">-%</span>
+              <span class="text-xs text-slate-500">ภาพรวม</span>
+            </div>
+            <div id="dash-stat-att-detail" class="mt-2 text-xs text-slate-500">
+              เกณฑ์ขั้นต่ำ 80%
+            </div>
+          </div>
+
+          <!-- Card 3: ความคืบหน้าการวัดผลคะแนน -->
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-indigo-300 transition-all">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">ความคืบหน้าตัวชี้วัด</span>
+              <span class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">📝</span>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="dash-stat-score-progress" class="text-3xl font-extrabold text-indigo-600">-/-</span>
+              <span class="text-xs text-slate-500">ตัวชี้วัด</span>
+            </div>
+            <div id="dash-stat-score-detail" class="mt-2 text-xs text-slate-500">
+              บันทึกคะแนนแล้ว -%
+            </div>
+          </div>
+
+          <!-- Card 4: ความพร้อมเล่ม ปพ.5 -->
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-purple-300 transition-all">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">ความพร้อมเล่ม ปพ.5</span>
+              <span class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg">📑</span>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="dash-stat-pp5-status" class="text-2xl font-extrabold text-purple-600">พร้อมสรุปผล</span>
+            </div>
+            <div id="dash-stat-pp5-detail" class="mt-2 text-xs text-slate-500">
+              ครอบคลุมเทอม 1 และ 2
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Action Hub (ทางด่วนงานสอนประจำวัน) -->
+        <div class="bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-slate-50 p-5 sm:p-6 rounded-3xl border border-blue-100 shadow-2xs">
+          <div class="flex items-center justify-between mb-3.5">
+            <h3 class="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-2">
+              <span>⚡</span> ทางด่วนงานประจำวัน (Quick Actions)
+            </h3>
+            <span class="text-[11px] text-slate-500">เข้าถึงงานสำคัญได้ใน 1 คลิก</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <button onclick="switchView('att_daily'); setAttendanceDateToToday();" class="p-4 bg-white rounded-2xl border border-blue-200 hover:border-blue-400 hover:bg-blue-50/60 shadow-2xs transition-all flex flex-col items-center justify-center gap-1.5 text-center group cursor-pointer">
+              <span class="text-2xl group-hover:scale-110 transition-transform">📝</span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-blue-600">เช็คชื่อคาบวันนี้</span>
+              <span class="text-[10px] text-slate-400">บันทึกเวลาเรียนวันนี้</span>
+            </button>
+            <button onclick="switchView('gradebook')" class="p-4 bg-white rounded-2xl border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/60 shadow-2xs transition-all flex flex-col items-center justify-center gap-1.5 text-center group cursor-pointer">
+              <span class="text-2xl group-hover:scale-110 transition-transform">🔥</span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600">บันทึกคะแนน</span>
+              <span class="text-[10px] text-slate-400">กรอกคะแนนตัวชี้วัด</span>
+            </button>
+            <button onclick="switchView('pp5_summary')" class="p-4 bg-white rounded-2xl border border-purple-200 hover:border-purple-400 hover:bg-purple-50/60 shadow-2xs transition-all flex flex-col items-center justify-center gap-1.5 text-center group cursor-pointer">
+              <span class="text-2xl group-hover:scale-110 transition-transform">📑</span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-purple-600">ดูเล่ม ปพ.5 รวม</span>
+              <span class="text-[10px] text-slate-400">สรุปคะแนนและเกรด</span>
+            </button>
+            <button onclick="exportPP5Excel()" class="p-4 bg-white rounded-2xl border border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/60 shadow-2xs transition-all flex flex-col items-center justify-center gap-1.5 text-center group cursor-pointer">
+              <span class="text-2xl group-hover:scale-110 transition-transform">📥</span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-emerald-600">ส่งออก ปพ.5 Excel</span>
+              <span class="text-[10px] text-slate-400">ดาวน์โหลดไฟล์ .xlsx</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Two Column Content: Alerts & Visual Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- Left Column (5 Cols): Alerts, Insights & Pending Items -->
+          <div class="lg:col-span-5 space-y-5">
+            
+            <!-- 1. คาบเรียนตกค้าง (ถ้ามี) -->
+            <div id="dash-missing-attendance-box">
+              <!-- Rendered by app.js if any missing lessons -->
+            </div>
+
+            <!-- 2. แจ้งเตือนเวลาเรียนต่ำกว่า 80% (สุ่มเสี่ยง มส.) -->
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <h3 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>⚠️</span> การประเมินเวลาเรียน (เกณฑ์ 80%)
+                </h3>
+                <span class="text-[11px] text-slate-400">ระวัง มส.</span>
+              </div>
+              <div id="dash-atrisk-container">
+                <!-- Rendered by app.js -->
+              </div>
+            </div>
+
+            <!-- 3. จุดที่ควรสอนซ่อมเสริม (ตัวชี้วัดที่คะแนนเฉลี่ยต่ำสุด) -->
+            <div id="dash-weakest-insight-box">
+              <!-- Rendered by app.js -->
+            </div>
+
+          </div>
+
+          <!-- Right Column (7 Cols): Visual Analytics Charts -->
+          <div class="lg:col-span-7 space-y-5">
+            
+            <!-- Chart 1: สัดส่วนการมาเรียนประจำห้อง (มา/ลา/ป่วย/ขาด) -->
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs">
+              <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
+                <h3 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>📊</span> สัดส่วนการเข้าเรียนของนักเรียนในห้อง
+                </h3>
+                <span class="text-[11px] text-slate-400">สะสมตลอดภาคเรียน</span>
+              </div>
+              <div class="relative h-60 sm:h-64 w-full flex items-center justify-center">
+                <canvas id="dashAttRatioChartCanvas"></canvas>
+              </div>
+              <div id="dash-att-legend-stats" class="mt-3 grid grid-cols-4 gap-2 text-center text-xs pt-2 border-t border-slate-100">
+                <!-- Rendered by app.js -->
+              </div>
+            </div>
+
+            <!-- Chart 2: การกระจายระดับผลการเรียน (ตัดเกรด 0 - 4) -->
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs">
+              <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
+                <h3 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>🎓</span> การกระจายระดับผลการเรียน (เกรด 0 - 4)
+                </h3>
+                <span class="text-[11px] text-slate-400">คะแนนเก็บ + สอบ</span>
+              </div>
+              <div class="relative h-56 sm:h-60 w-full">
+                <canvas id="dashGradeDistChartCanvas"></canvas>
+              </div>
+              <p class="text-[11px] text-slate-400 text-center mt-2">
+                คำนวณจากคะแนนที่บันทึกแล้วในระบบตามเกณฑ์มาตรฐาน สพฐ. (เกรด 1.0 - 4.0)
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           VIEW 0: CURRICULUM VIEW (โครงสร้างรายวิชา)
+           ======================================================== -->
+      <section id="view-curriculum" class="hidden max-w-6xl mx-auto space-y-6">
+        
+        <h2 id="curriculum-page-title" class="text-xl sm:text-2xl font-bold text-blue-700 tracking-tight">
+          โครงสร้างรายวิชาประวัติศาสตร์ (ส 16102 ชั้น ป.6)
+        </h2>
+
+        <!-- Top Stat Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div class="bg-white border border-slate-200/90 rounded-2xl p-4 text-center shadow-xs">
+            <div class="text-xs font-medium text-slate-500">คะแนนเก็บระหว่างเรียน</div>
+            <div id="stat-accumulated-score" class="text-2xl sm:text-3xl font-extrabold text-blue-600 mt-1">70</div>
+          </div>
+
+          <div class="bg-white border border-slate-200/90 rounded-2xl p-4 text-center shadow-xs">
+            <div class="text-xs font-medium text-slate-500">สอบกลางภาค</div>
+            <div id="stat-midterm-score" class="text-2xl sm:text-3xl font-extrabold text-cyan-600 mt-1">15</div>
+          </div>
+
+          <div class="bg-white border border-slate-200/90 rounded-2xl p-4 text-center shadow-xs">
+            <div class="text-xs font-medium text-slate-500">สอบปลายภาค</div>
+            <div id="stat-final-score" class="text-2xl sm:text-3xl font-extrabold text-purple-600 mt-1">15</div>
+          </div>
+
+          <div class="bg-white border border-slate-200/90 rounded-2xl p-4 text-center shadow-xs">
+            <div class="text-xs font-medium text-slate-500">รวมทั้งสิ้น</div>
+            <div id="stat-total-score" class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1">100</div>
+          </div>
+
+          <div class="bg-white border border-slate-200/90 rounded-2xl p-4 text-center shadow-xs col-span-2 sm:col-span-1">
+            <div class="text-xs font-medium text-slate-500">เวลาเรียนรวม</div>
+            <div id="stat-total-hours" class="text-xl sm:text-2xl font-extrabold text-indigo-600 mt-1">40 / 40 ชม./ปี</div>
+          </div>
+        </div>
+
+        <!-- Section: รายการหน่วยการเรียนรู้ -->
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">รายการหน่วยการเรียนรู้</h3>
+              <div id="curriculum-subcategory-name" class="text-xs font-medium text-indigo-600 flex items-center gap-1.5 mt-0.5">
+                <span>🏛️</span> <span>รายวิชาประวัติศาสตร์</span>
+              </div>
+            </div>
+            
+            <button onclick="switchView('gradebook')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5">
+              <span>✏️</span> <span>กรอกคะแนน (ปพ.5)</span>
+            </button>
+          </div>
+
+          <!-- Curriculum Units Table -->
+          <div class="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-100/80 text-xs font-bold text-slate-700 border-b border-slate-200">
+                    <th class="py-3.5 px-4 text-center w-16">หน่วยที่</th>
+                    <th class="py-3.5 px-4 min-w-[200px]">ชื่อหน่วยการเรียนรู้</th>
+                    <th class="py-3.5 px-4 min-w-[340px]">ตัวชี้วัด/ผลการเรียนรู้</th>
+                    <th class="py-3.5 px-4 text-center w-28">ภาคเรียน</th>
+                    <th class="py-3.5 px-4 text-center w-20">เวลา (ชม.)</th>
+                    <th class="py-3.5 px-4 text-center w-20">คะแนน</th>
+                  </tr>
+                </thead>
+                <tbody id="curriculum-units-tbody">
+                  <!-- Generated by app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+
+
+      <!-- ========================================================
+           VIEW 1: ATTENDANCE & TIME REPORTS (เช็คชื่อและรายงานเวลาเรียน)
+           ======================================================== -->
+      <section id="view-attendance" class="hidden max-w-7xl mx-auto space-y-6 pb-16">
+        
+        <!-- Header & 3 Sub-Tabs Navigation -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200/90 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-md shadow-blue-500/20 shrink-0">
+              📋
+            </div>
+            <div>
+              <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>ระบบเช็คชื่อและรายงานเวลาเรียน</span>
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                บันทึกเวลาเรียนรายวัน รายงานตารางประจำเดือน และสรุปผลเวลาเรียนตลอดภาคเรียนสำหรับลง ปพ.5
+              </p>
+            </div>
+          </div>
+
+          <!-- 3 Sub-Tabs Pills -->
+          <div class="flex items-center gap-1.5 p-1.5 bg-slate-200/80 rounded-2xl self-start md:self-center overflow-x-auto max-w-full shadow-2xs">
+            <button 
+              id="subtab-btn-daily"
+              onclick="switchAttendanceSubTab('daily')" 
+              class="touch-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap bg-white text-blue-700 shadow-xs"
+            >
+              <span>📝</span> <span>บันทึกรายวัน</span>
+            </button>
+            <button 
+              id="subtab-btn-monthly"
+              onclick="switchAttendanceSubTab('monthly')" 
+              class="touch-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <span>📅</span> <span>รายงานประจำเดือน</span>
+            </button>
+            <button 
+              id="subtab-btn-semester"
+              onclick="switchAttendanceSubTab('semester')" 
+              class="touch-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <span>📊</span> <span>สรุปผลภาคเรียน (ปพ.5)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             PANEL 1: DAILY ATTENDANCE (บันทึกรายวัน)
+             ========================================== -->
+        <div id="panel-att-daily" class="space-y-4">
+          <!-- Smart Day Guard Alert Banner -->
+          <div id="attendance-guard-banner" class="hidden transition-all duration-300">
+            <!-- Populated by app.js -->
+          </div>
+
+          <!-- Missed Attendance Reminder Banner (กันลืมเช็คชื่อ) -->
+          <div id="missed-attendance-banner" class="hidden transition-all duration-300">
+            <!-- Populated by app.js -->
+          </div>
+
+          <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                <span>📅</span> <span>วันที่เช็คชื่อ:</span>
+              </span>
+
+              <div class="relative inline-flex items-center">
+                <!-- Custom Thai Date Display Button (วัน เดือน ปี พ.ศ.) -->
+                <button 
+                  type="button" 
+                  id="attendance-date-picker-btn"
+                  onclick="openAttendanceDatePicker()" 
+                  class="touch-target px-3.5 py-1.5 border border-slate-300 hover:border-blue-500 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-blue-50/50 text-slate-800 flex items-center gap-2 shadow-2xs transition-all cursor-pointer"
+                  title="คลิกเพื่อเลือกวันที่เช็คชื่อ (วัน เดือน ปี)"
+                >
+                  <span class="text-blue-600 text-sm">📅</span>
+                  <span id="attendance-date-thai-display" class="tracking-wide">--/--/----</span>
+                  <span id="attendance-date-day-badge" class="text-[11px] font-semibold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-full">วัน--</span>
+                  <span class="text-[10px] text-slate-400">▾</span>
+                </button>
+
+                <!-- Hidden native date input triggered by showPicker() -->
+                <input 
+                  type="date" 
+                  id="attendance-date-input" 
+                  class="sr-only"
+                />
+              </div>
+
+              <!-- Quick Day Stepper: วันก่อนหน้า | วันนี้ | วันถัดไป -->
+              <div class="inline-flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shadow-2xs text-xs font-semibold">
+                <button 
+                  type="button" 
+                  onclick="changeAttendanceDayOffset(-1)" 
+                  title="วันก่อนหน้า (ตามตารางสอน)"
+                  class="px-2.5 py-1 text-slate-600 hover:text-blue-700 hover:bg-white rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <span>◀</span> <span class="hidden sm:inline">ก่อนหน้า</span>
+                </button>
+                <button 
+                  type="button" 
+                  onclick="setAttendanceDateToday()" 
+                  title="กลับมาวันที่ปัจจุบัน"
+                  class="px-2.5 py-1 text-blue-700 hover:bg-white rounded-lg transition-all font-bold cursor-pointer"
+                >
+                  วันนี้
+                </button>
+                <button 
+                  type="button" 
+                  onclick="changeAttendanceDayOffset(1)" 
+                  title="วันถัดไป (ตามตารางสอน)"
+                  class="px-2.5 py-1 text-slate-600 hover:text-blue-700 hover:bg-white rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <span class="hidden sm:inline">ถัดไป</span> <span>▶</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button 
+                id="btn-mark-all-present"
+                onclick="markAllAttendance('มา')" 
+                class="touch-target flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>✅</span> <span>มาทุกคน</span>
+              </button>
+
+              <!-- Dynamic Auto-saved Indicator -->
+              <div id="attendance-auto-save-badge" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs font-medium shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>บันทึกแล้วอัตโนมัติ</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Attendance Stats Counters -->
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200/90 text-center shadow-2xs">
+              <div class="text-xs text-slate-500 font-semibold">มาเรียน</div>
+              <div id="count-present" class="text-xl font-bold text-emerald-600 mt-0.5">0</div>
+            </div>
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200/90 text-center shadow-2xs">
+              <div class="text-xs text-slate-500 font-semibold">ลา</div>
+              <div id="count-leave" class="text-xl font-bold text-amber-500 mt-0.5">0</div>
+            </div>
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200/90 text-center shadow-2xs">
+              <div class="text-xs text-slate-500 font-semibold">ป่วย</div>
+              <div id="count-sick" class="text-xl font-bold text-sky-600 mt-0.5">0</div>
+            </div>
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200/90 text-center shadow-2xs">
+              <div class="text-xs text-slate-500 font-semibold">ขาดเรียน</div>
+              <div id="count-absent" class="text-xl font-bold text-rose-600 mt-0.5">0</div>
+            </div>
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200/90 text-center col-span-2 sm:col-span-1 shadow-2xs">
+              <div class="text-xs text-slate-500 font-semibold">รวมทั้งหมด</div>
+              <div id="count-total" class="text-xl font-bold text-slate-800 mt-0.5">0</div>
+            </div>
+          </div>
+
+          <!-- Attendance Table -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-100/80 text-xs font-bold text-slate-600 border-b border-slate-200">
+                    <th class="py-3 px-3 text-center w-14">เลขที่</th>
+                    <th class="py-3 px-4 min-w-[140px]">ชื่อ - นามสกุล</th>
+                    <th class="py-3 px-2 text-center hidden md:table-cell w-24 text-blue-700">เทอม 1 (%)</th>
+                    <th class="py-3 px-2 text-center hidden md:table-cell w-24 text-emerald-700">เทอม 2 (%)</th>
+                    <th class="py-3 px-2 text-center hidden sm:table-cell w-28 text-indigo-700">ทั้งปีการศึกษา (%)</th>
+                    <th class="py-3 px-4 text-right">สถานะเข้าเรียน</th>
+                  </tr>
+                </thead>
+                <tbody id="attendance-table-body">
+                  <!-- Dynamically Rendered -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-500 text-center">
+            💡 แตะปุ่ม <span class="text-emerald-600 font-semibold">มา</span> / <span class="text-amber-600 font-semibold">ลา</span> / <span class="text-sky-600 font-semibold">ป่วย</span> / <span class="text-rose-600 font-semibold">ขาด</span> เพื่อเปลี่ยนสถานะทันที | เวลาเรียนต่ำกว่า 80% ติด <span class="badge-ms text-[10px]">มส.</span>
+          </p>
+        </div>
+
+        <!-- ==========================================
+             PANEL 2: MONTHLY REPORT (รายงานประจำเดือน)
+             ========================================== -->
+        <div id="panel-att-monthly" class="hidden space-y-5">
+          
+          <!-- Month & Grade Filters Bar -->
+          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Select Month / Year -->
+              <div>
+                <label for="monthly-att-month-select" class="block text-xs font-bold text-slate-700 mb-1">เลือกเดือน / ปี พ.ศ.</label>
+                <div class="flex items-center bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-blue-500">
+                  <span class="text-slate-400 mr-2 text-sm">📅</span>
+                  <select 
+                    id="monthly-att-month-select" 
+                    onchange="handleMonthlyFilterChange()" 
+                    class="bg-transparent text-sm font-semibold text-slate-800 focus:outline-none cursor-pointer"
+                  >
+                    <!-- Options populated dynamically -->
+                  </select>
+                </div>
+              </div>
+
+              <!-- Active Room Badge (อิงตามจุดเลือกห้องด้านบน) -->
+              <div class="flex items-center self-end mb-0.5">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-xs font-bold text-blue-900 shadow-2xs">
+                  <span>🏫</span>
+                  <span id="monthly-att-room-display">ห้อง ป.6</span>
+                </span>
+                <input type="hidden" id="monthly-att-grade-select" value="ป.6" />
+              </div>
+            </div>
+
+            <!-- Export Monthly Excel Button -->
+            <button 
+              onclick="exportMonthlyAttendanceExcel()" 
+              class="touch-target px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center justify-center gap-2 self-start md:self-end"
+            >
+              <span>📥</span> <span>ส่งออก Excel รายเดือน</span>
+            </button>
+          </div>
+
+          <!-- Monthly Stat Cards (Matching Image 1) -->
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+              <div class="text-xs text-slate-500 font-semibold">รวมคาบที่สอน</div>
+              <div id="monthly-stat-periods" class="text-2xl font-bold text-slate-900 mt-1">0 คาบ</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+              <div class="text-xs text-slate-500 font-semibold">มาเรียนเฉลี่ย</div>
+              <div id="monthly-stat-rate" class="text-2xl font-bold text-emerald-600 mt-1">0%</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+              <div class="text-xs text-slate-500 font-semibold">ขาดเรียนรวม</div>
+              <div id="monthly-stat-absent" class="text-2xl font-bold text-rose-600 mt-1">0 ครั้ง</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+              <div class="text-xs text-slate-500 font-semibold">ลารวม</div>
+              <div id="monthly-stat-leave" class="text-2xl font-bold text-amber-500 mt-1">0 ครั้ง</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center col-span-2 sm:col-span-1 shadow-xs">
+              <div class="text-xs text-slate-500 font-semibold">ป่วยรวม</div>
+              <div id="monthly-stat-sick" class="text-2xl font-bold text-sky-600 mt-1">0 ครั้ง</div>
+            </div>
+          </div>
+
+          <!-- Monthly Matrix Grid Table -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+            <div id="monthly-matrix-container" class="matrix-container">
+              <!-- Dynamically rendered monthly matrix table -->
+            </div>
+          </div>
+
+          <!-- Legend Footer -->
+          <div class="p-3 bg-slate-100/80 rounded-xl text-slate-600 text-[11px] sm:text-xs leading-relaxed flex flex-wrap items-center justify-between gap-2 border border-slate-200">
+            <div>
+              <span class="font-bold text-slate-800">สัญลักษณ์:</span> 
+              <span class="text-emerald-700 font-bold ml-1.5">✓</span> = มา, 
+              <span class="text-rose-700 font-bold ml-1.5">ข</span> = ขาด, 
+              <span class="text-amber-700 font-bold ml-1.5">ล</span> = ลา, 
+              <span class="text-sky-700 font-bold ml-1.5">ป</span> = ป่วย | 
+              <span class="text-rose-600 font-bold ml-1.5">🚫</span> = วันหยุด/ไม่มีคาบเรียน | 
+              <span class="text-slate-400 font-bold ml-1.5">-</span> = วันเสาร์-อาทิตย์
+            </div>
+            <div class="text-slate-400 italic">
+              * แตะที่ช่องวันในตารางเพื่อสลับสถานะได้ทันที
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             PANEL 3: SEMESTER SUMMARY (สรุปภาคเรียน / ปพ.5)
+             ========================================== -->
+        <div id="panel-att-semester" class="hidden space-y-5">
+          
+          <!-- Condition Filter Card (Matching Image 2) -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-4">
+            <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+              <span class="text-base">🔍</span>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">กำหนดเงื่อนไขรายงานเวลาเรียน</h3>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end">
+              <!-- ห้องเรียนที่เลือก (อิงตามจุดเลือกห้องด้านบน) -->
+              <div class="sm:col-span-4">
+                <label class="block text-xs font-bold text-slate-700 mb-1">ห้องเรียน (อิงจากด้านบน)</label>
+                <div class="flex items-center gap-2 px-3 py-2 bg-blue-50/70 border border-blue-200 rounded-xl text-sm font-bold text-blue-900 shadow-2xs">
+                  <span>🏫</span>
+                  <span id="sem-att-room-display">ห้อง ป.6</span>
+                </div>
+                <input type="hidden" id="sem-att-grade-select" value="ป.6" />
+              </div>
+
+              <!-- เลือกช่วงเวลาการรายงานผล -->
+              <div class="sm:col-span-5">
+                <label for="sem-att-semester-select" class="block text-xs font-bold text-slate-700 mb-1">ช่วงเวลาการรายงานผล</label>
+                <select 
+                  id="sem-att-semester-select" 
+                  onchange="renderSemesterAttendanceTab()" 
+                  class="touch-target w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
+                >
+                  <option value="1">ภาคเรียนที่ 1</option>
+                  <option value="2">ภาคเรียนที่ 2</option>
+                  <option value="all">🎓 ตลอดทั้งปีการศึกษา (รวมเทอม 1 + 2)</option>
+                </select>
+              </div>
+
+              <!-- Actions -->
+              <div class="sm:col-span-3">
+                <button 
+                  onclick="exportSemesterAttendanceExcel()" 
+                  class="touch-target w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span>📥</span> <span>ดาวน์โหลด Excel (ปพ.5)</span>
+                </button>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-500 pt-1">
+              * ระบบจะนับจำนวนคาบและคิดเปอร์เซ็นต์ เฉพาะวันที่อยู่ในช่วงเปิด-ปิดภาคเรียนที่ตั้งไว้เท่านั้น
+            </p>
+          </div>
+
+          <!-- Overview Stats -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+              <div id="sem-stat-hours-label" class="text-xs text-slate-500 font-semibold">เวลาเรียนเต็มตามหลักสูตร</div>
+              <div id="sem-stat-total-hours" class="text-2xl font-bold text-slate-900 mt-1">20 คาบ</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+              <div class="text-xs text-slate-500 font-semibold">จำนวนนักเรียนทั้งหมด</div>
+              <div id="sem-stat-total-students" class="text-2xl font-bold text-blue-600 mt-1">0 คน</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+              <div class="text-xs text-slate-500 font-semibold">มาเรียนปกติ (≥ 80%)</div>
+              <div id="sem-stat-normal" class="text-2xl font-bold text-emerald-600 mt-1">0 คน</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+              <div class="text-xs text-slate-500 font-semibold">เสี่ยงติด มส. (&lt; 80%)</div>
+              <div id="sem-stat-ms" class="text-2xl font-bold text-rose-600 mt-1">0 คน</div>
+            </div>
+          </div>
+
+          <!-- Semester Attendance Summary Table (Matching Image 2) -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 id="sem-att-table-title" class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <span>📊</span> <span>ผลการเรียนรวม / สถิติเวลาเรียน</span>
+              </h3>
+              <span id="sem-att-table-subtitle" class="text-xs font-medium text-slate-500">พร้อมคัดลอกลง ปพ.5</span>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead id="sem-att-table-head">
+                  <tr class="bg-slate-100/80 text-xs font-bold text-slate-600 border-b border-slate-200">
+                    <th class="py-3 px-3 text-center w-14">เลขที่</th>
+                    <th class="py-3 px-4 min-w-[180px]">ชื่อ - นามสกุล</th>
+                    <th class="py-3 px-3 text-center text-emerald-700 w-16">มา</th>
+                    <th class="py-3 px-3 text-center text-rose-700 w-16">ขาด</th>
+                    <th class="py-3 px-3 text-center text-amber-700 w-16">ลา</th>
+                    <th class="py-3 px-3 text-center text-sky-700 w-16">ป่วย</th>
+                    <th class="py-3 px-3 text-center font-bold text-slate-800 w-24">รวมคาบเรียน</th>
+                    <th class="py-3 px-4 text-center font-bold text-blue-700 w-24">ร้อยละ (%)</th>
+                    <th class="py-3 px-4 text-center w-24">สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody id="semester-att-table-body">
+                  <!-- Dynamically rendered -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+
+
+      <!-- ========================================================
+           VIEW 2: GRADEBOOK (สมุดคะแนน)
+           ======================================================== -->
+      <section id="view-gradebook" class="hidden space-y-4">
+        
+        <!-- Navigation Switcher between Gradebook and Holistic Assessment -->
+        <!-- Academic Sub-tabs & Shortcut to Documents -->
+        <div class="flex items-center justify-between flex-wrap gap-2 w-full">
+          <div class="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
+            <button type="button" class="px-3.5 py-1.5 rounded-lg bg-white text-blue-700 font-bold shadow-xs cursor-default">
+              📊 คะแนนตัวชี้วัด
+            </button>
+            <button type="button" onclick="switchView('holistic')" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer">
+              ⭐ ประเมิน 3 ด้าน
+            </button>
+          </div>
+
+          <button 
+            type="button" 
+            onclick="switchView('pp5_summary')" 
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer ml-auto"
+          >
+            <span>📑</span> <span>ไปที่งานเอกสาร ปพ.5</span> <span>↗</span>
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+              <span>สมุดบันทึกคะแนนตัวชี้วัด (ปพ.5)</span>
+              <span id="gradebook-class-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">ห้อง ป.6</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">
+              คำนวณคะแนนและตัดเกรดอัตโนมัติ 8 ระดับ (80-100 = 4, 75-79 = 3.5, ..., 0-49 = 0)
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <!-- 3-Segmented Semester Switcher for Gradebook -->
+            <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
+              <button 
+                type="button" 
+                id="gb-tab-term1" 
+                onclick="handleGradebookSemesterChange('1')" 
+                class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer"
+              >
+                ภาคเรียนที่ 1 (50)
+              </button>
+              <button 
+                type="button" 
+                id="gb-tab-term2" 
+                onclick="handleGradebookSemesterChange('2')" 
+                class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer"
+              >
+                ภาคเรียนที่ 2 (50)
+              </button>
+              <button 
+                type="button" 
+                id="gb-tab-all" 
+                onclick="handleGradebookSemesterChange('all')" 
+                class="px-3 py-1.5 rounded-lg transition-all bg-white text-blue-700 font-bold shadow-xs cursor-pointer"
+              >
+                🎓 ทั้งปีการศึกษา (100)
+              </button>
+            </div>
+
+            <!-- Overdue Tracker Button (เช็คงานค้าง & ส่ง LINE) -->
+            <button 
+              type="button" 
+              onclick="openPendingWorkModal()" 
+              class="touch-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="ตรวจสอบงานค้างรายคนและคัดลอกส่งไลน์ผู้ปกครอง"
+            >
+              <span>🚨</span> <span>เช็คงานค้าง</span>
+              <span id="gradebook-pending-badge" class="px-1.5 py-0.5 rounded-full bg-white text-amber-800 font-extrabold text-[10px]">2 คน</span>
+            </button>
+
+            <button onclick="exportPP5Excel()" class="touch-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center gap-1.5">
+              <span>📥</span> <span>Export ปพ.5 (.xlsx)</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="table-container">
+            <table class="w-full text-left border-collapse">
+              <thead id="gradebook-thead">
+                <tr id="gradebook-unit-row" class="gradebook-unit-row">
+                  <!-- Generated by app.js: แถวที่ 1 ชื่อหน่วยและน้ำหนักคะแนน -->
+                </tr>
+                <tr id="gradebook-header-row" class="gradebook-ind-row">
+                  <!-- Generated by app.js: แถวที่ 2 ตัวชี้วัดและคะแนนเต็มดิบ -->
+                </tr>
+              </thead>
+              <tbody id="gradebook-table-body">
+                <!-- Generated by app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 px-1 gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span>💡 <strong>คำแนะนำ:</strong> เลื่อนดูตารางได้รอบทิศทาง คอลัมน์ชื่อและแถวตัวชี้วัดจะล็อกนิ่ง (Freeze) ไว้เสมอ</span>
+            <span class="text-blue-600 font-semibold">• ⭐ รวมแปลง = คิดสัดส่วนตามน้ำหนักหน่วยอัตโนมัติเมื่อเก็บครบทุกตัวชี้วัด</span>
+            <span class="text-amber-700 font-semibold">• 💡 นำเมาส์ชี้ที่ "เต็ม .." หรือ "น้ำหนัก .." จะปรากฏปุ่ม ✏️ เพื่อคลิกแก้ไขคะแนน</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 bg-emerald-500 rounded-sm"></span> ระหว่างทาง</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 bg-rose-500 rounded-sm"></span> ปลายทาง</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 bg-red-500 rounded-sm"></span> เกรด 0 (< 50%)</span>
+          </div>
+        </div>
+      </section>
+
+
+
+            <!-- ========================================================
+           VIEW: HOLISTIC ASSESSMENTS (ประเมิน 3 ด้านตามเกณฑ์ สพฐ.)
+           ======================================================== -->
+      <section id="view-holistic" class="hidden space-y-4">
+        
+        <!-- Navigation Switcher between Gradebook and Holistic Assessment -->
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
+              <button type="button" onclick="switchView('gradebook')" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer">
+                📊 คะแนนตัวชี้วัด
+              </button>
+              <button type="button" class="px-3.5 py-1.5 rounded-lg bg-white text-blue-700 font-bold shadow-xs cursor-default">
+                ⭐ ประเมิน 3 ด้าน
+              </button>
+            </div>
+
+            <button 
+              type="button" 
+              onclick="switchView('pp5_summary')" 
+              class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>📑</span> <span>ไปที่งานเอกสาร ปพ.5</span> <span>↗</span>
+            </button>
+          </div>
+
+          <!-- Semester Switcher & Class Badge -->
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span id="holistic-class-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+              ห้อง ป.6 (6 คน)
+            </span>
+            <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
+              <button 
+                type="button" 
+                id="holistic-sem-term1" 
+                onclick="handleHolisticSemesterChange('1')" 
+                class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer"
+              >
+                ภาคเรียนที่ 1
+              </button>
+              <button 
+                type="button" 
+                id="holistic-sem-term2" 
+                onclick="handleHolisticSemesterChange('2')" 
+                class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer"
+              >
+                ภาคเรียนที่ 2
+              </button>
+              <button 
+                type="button" 
+                id="holistic-sem-all" 
+                onclick="handleHolisticSemesterChange('all')" 
+                class="px-3 py-1.5 rounded-lg transition-all bg-white text-blue-700 font-bold shadow-xs cursor-pointer"
+              >
+                🎓 ตลอดทั้งปีการศึกษา
+              </button>
+            </div>
+            <button 
+              type="button" 
+              onclick="exportHolisticExcel()" 
+              class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <span>📥</span> <span>Export ปพ.5 (.xlsx)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sleek Dark Header Card (Matching User Screenshot) -->
+        <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
+          <!-- 3 Top Tabs -->
+          <div class="flex items-center gap-2 border-b border-slate-800/80 pb-3 overflow-x-auto">
+            <button 
+              type="button" 
+              id="holistic-tab-btn-traits" 
+              onclick="handleHolisticTabChange('traits')" 
+              class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer bg-slate-800/90 text-white border border-slate-700 shadow-xs"
+            >
+              <span>⭐</span> <span>คุณลักษณะอันพึงประสงค์</span>
+            </button>
+            <button 
+              type="button" 
+              id="holistic-tab-btn-reading" 
+              onclick="handleHolisticTabChange('reading')" 
+              class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50"
+            >
+              <span>📄</span> <span>อ่าน คิดวิเคราะห์ เขียน</span>
+            </button>
+            <button 
+              type="button" 
+              id="holistic-tab-btn-competencies" 
+              onclick="handleHolisticTabChange('competencies')" 
+              class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50"
+            >
+              <span>⚖️</span> <span>สมรรถนะสำคัญ</span>
+            </button>
+          </div>
+
+          <!-- Title, Legend, and Action Buttons -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 id="holistic-view-title" class="text-lg sm:text-xl font-extrabold text-white tracking-wide flex items-center gap-2">
+                <span>ประเมินคุณลักษณะอันพึงประสงค์</span>
+              </h2>
+              <!-- Rating scale criteria badges -->
+              <div class="flex items-center gap-2 text-xs text-slate-300 flex-wrap mt-1.5">
+                <span class="text-slate-400 font-medium">กรอกระดับคะแนน (0-3):</span>
+                <span class="px-2 py-0.5 rounded font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/30">3 = ดีเยี่ยม</span>
+                <span class="px-2 py-0.5 rounded font-bold text-blue-400 bg-blue-950/80 border border-blue-500/30">2 = ดี</span>
+                <span class="px-2 py-0.5 rounded font-bold text-amber-400 bg-amber-950/80 border border-amber-500/30">1 = ผ่าน</span>
+                <span class="px-2 py-0.5 rounded font-bold text-rose-400 bg-rose-950/80 border border-rose-500/30">0 = ไม่ผ่าน</span>
+                <span class="text-slate-400 text-[11px] ml-1">⚡ พิมพ์เลขแล้วบันทึกและเลื่อนช่องถัดไปอัตโนมัติ (ใช้ลูกศร ↑ ↓ ← → ได้)</span>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <button 
+                type="button" 
+                onclick="autoEvaluateHolisticByGrade()" 
+                title="คำนวณและประเมินระดับคุณภาพตามเกรดเฉลี่ยของนักเรียนให้อัตโนมัติ"
+                class="px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>⚡</span> <span>ประเมินอัตโนมัติตามเกรด</span>
+              </button>
+              <button 
+                type="button" 
+                onclick="setAllHolisticLevel(3)" 
+                title="กำหนดระดับ 3 (ดีเยี่ยม) ให้นักเรียนทุกคนในแถบนี้"
+                class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>⚡</span> <span>3 (ดีเยี่ยม) ทุกคน</span>
+              </button>
+              <button 
+                type="button" 
+                onclick="saveHolisticAssessments()" 
+                class="px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-900 hover:bg-slate-100 shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>💾</span> <span>บันทึกผลประเมิน</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="table-container max-h-[600px] overflow-auto">
+            <table class="w-full border-collapse text-left">
+              <thead>
+                <tr id="holistic-table-header-row" class="bg-slate-900 text-white text-xs font-bold">
+                  <!-- Generated by app.js -->
+                </tr>
+              </thead>
+              <tbody id="holistic-table-body" class="divide-y divide-slate-100 text-sm">
+                <!-- Generated by app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tips & Legend Footer -->
+        <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 px-1 gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span>💡 <strong>เกณฑ์สรุปผล (สพฐ.):</strong> ค่าเฉลี่ย ≥ 2.5 = ดีเยี่ยม (3), ≥ 1.5 = ดี (2), ≥ 1.0 = ผ่าน (1), < 1.0 หรือมี 0 = ไม่ผ่าน (0)</span>
+            <span class="text-indigo-600 font-semibold">• ⚡ ประเมินอัตโนมัติจะอิงจากคะแนน/เกรดตัวชี้วัดจริงของนักเรียน</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-1 font-bold text-emerald-600"><span class="w-2.5 h-2.5 bg-emerald-500 rounded-sm"></span> 3=ดีเยี่ยม</span>
+            <span class="inline-flex items-center gap-1 font-bold text-blue-600"><span class="w-2.5 h-2.5 bg-blue-500 rounded-sm"></span> 2=ดี</span>
+            <span class="inline-flex items-center gap-1 font-bold text-amber-600"><span class="w-2.5 h-2.5 bg-amber-500 rounded-sm"></span> 1=ผ่าน</span>
+            <span class="inline-flex items-center gap-1 font-bold text-rose-600"><span class="w-2.5 h-2.5 bg-rose-500 rounded-sm"></span> 0=ไม่ผ่าน</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           VIEW: PP5 SUMMARY / DOCUMENTS (งานเอกสาร ปพ.5 สรุปผลรวม)
+           ======================================================== -->
+      <section id="view-pp5_summary" class="hidden space-y-4">
+        
+        <!-- Top Identity & Actions Bar -->
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-100 text-purple-900 font-extrabold text-xs border border-purple-200 shadow-2xs">
+              <span class="text-base">📑</span>
+              <span>หมวดงานเอกสาร: ปพ.5</span>
+            </div>
+            <span class="text-xs text-slate-400 hidden sm:inline">•</span>
+            <span class="text-xs font-semibold text-slate-600 hidden sm:inline">แบบสรุปผลการพัฒนาคุณภาพผู้เรียน</span>
+          </div>
+
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span id="pp5-summary-class-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+              ห้อง ป.6 • ทั้งปีการศึกษา
+            </span>
+            <button 
+              type="button" 
+              onclick="exportPP5Excel()" 
+              class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <span>📥</span> <span>Export ปพ.5 รวม (.xlsx)</span>
+            </button>
+            <button 
+              type="button" 
+              onclick="window.print()" 
+              class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <span>🖨️</span> <span>พิมพ์หน้านี้</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sleek Dark Header Card with Score Proportions KPI -->
+        <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg sm:text-xl font-extrabold text-white tracking-wide flex items-center gap-2">
+                <span>📋 แบบสรุปผลการพัฒนาคุณภาพผู้เรียน (ปพ.5)</span>
+              </h2>
+              <p id="pp5-summary-sub-title" class="text-xs text-slate-400 mt-1">
+                โครงสร้างสัดส่วนคะแนนรายปี: ภาคเรียนที่ 1 (50 คะแนน) + ภาคเรียนที่ 2 (50 คะแนน) = 100 คะแนนเต็ม
+              </p>
+            </div>
+          </div>
+
+          <!-- Dynamic Score Proportion KPI Cards Container -->
+          <div id="pp5-kpi-container" class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+            <!-- Rendered by app.js -->
+          </div>
+        </div>
+
+        <!-- Dual-Axis Interactive Control Bar (Scope & Data View) -->
+        <div class="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+          <!-- 1. Semester Scope Switcher (ทั้งปี / เทอม 1 / เทอม 2) -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+              <span>🗓️</span> <span>ช่วงเวลา:</span>
+            </span>
+            <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
+              <button 
+                type="button" 
+                id="pp5-scope-btn-all" 
+                onclick="setPP5SemesterScope('all')" 
+                class="px-3.5 py-1.5 rounded-lg transition-all bg-white text-blue-700 font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <span>🎓</span> <span>ทั้งปีการศึกษา (100)</span>
+              </button>
+              <button 
+                type="button" 
+                id="pp5-scope-btn-1" 
+                onclick="setPP5SemesterScope('1')" 
+                class="px-3.5 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center gap-1.5"
+              >
+                <span>📘</span> <span>ภาคเรียนที่ 1 (50)</span>
+              </button>
+              <button 
+                type="button" 
+                id="pp5-scope-btn-2" 
+                onclick="setPP5SemesterScope('2')" 
+                class="px-3.5 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center gap-1.5"
+              >
+                <span>🟣</span> <span>ภาคเรียนที่ 2 (50)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Data View Mode Switcher (Active on All Year) -->
+          <div id="pp5-filter-container" class="flex items-center gap-2 flex-wrap transition-opacity duration-200">
+            <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+              <span>👁️</span> <span>มุมมองข้อมูล:</span>
+            </span>
+            <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
+              <button 
+                type="button" 
+                id="pp5-filter-btn-all" 
+                onclick="setPP5SummaryFilter('all')" 
+                class="px-3 py-1.5 rounded-lg transition-all bg-white text-slate-900 font-bold shadow-xs cursor-pointer flex items-center gap-1"
+              >
+                <span>📑</span> <span>ตารางรวมทั้งหมด</span>
+              </button>
+              <button 
+                type="button" 
+                id="pp5-filter-btn-scores" 
+                onclick="setPP5SummaryFilter('scores')" 
+                class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center gap-1"
+              >
+                <span>📊</span> <span>เฉพาะคะแนน (100)</span>
+              </button>
+              <button 
+                type="button" 
+                id="pp5-filter-btn-assessments" 
+                onclick="setPP5SummaryFilter('assessments')" 
+                class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center gap-1"
+              >
+                <span>⭐</span> <span>เฉพาะผลประเมิน 3 ด้าน</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Master Summary Table -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="table-container max-h-[640px] overflow-auto">
+            <table class="w-full border-collapse text-left">
+              <thead id="pp5-summary-table-head">
+                <!-- Dynamically generated with high-contrast colors by app.js -->
+              </thead>
+              <tbody id="pp5-summary-table-body" class="divide-y divide-slate-100 text-sm">
+                <!-- Dynamically generated by app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tips & Legend Footer -->
+        <div id="pp5-summary-legend-footer" class="flex flex-wrap items-center justify-between text-xs text-slate-500 px-1 gap-2">
+          <!-- Dynamically generated by app.js -->
+        </div>
+
+      </section>
+
+<!-- ========================================================
+           VIEW 3: LESSON LOGS (บันทึกหลังสอน)
+           ======================================================== -->
+      <section id="view-lesson_logs" class="hidden max-w-5xl mx-auto space-y-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+            <div class="border-b border-slate-100 pb-3">
+              <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span>📝</span> บันทึกผลการจัดการเรียนรู้ประจำวัน
+              </h3>
+              <p class="text-xs text-indigo-700 mt-0.5">
+                รายวิชา: <span id="log-grade-room-label" class="font-bold">ส 16102 ประวัติศาสตร์ (ป.6/1)</span>
+              </p>
+            </div>
+
+            <form onsubmit="saveNewLessonLog(event)" class="space-y-3.5">
+              <div>
+                <label for="log-date-input" class="block text-xs font-semibold text-slate-700 mb-1">วันที่สอน</label>
+                <input 
+                  type="date" 
+                  id="log-date-input" 
+                  required
+                  class="touch-target w-full px-3 py-2 border border-slate-300 bg-slate-50 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label for="log-quick-topic-select" class="block text-xs font-semibold text-indigo-800 mb-1 flex items-center gap-1">
+                  <span>💡</span> เลือกสาระการเรียนรู้ตามโครงสร้างรายวิชา (กรอกอัตโนมัติ)
+                </label>
+                <select 
+                  id="log-quick-topic-select" 
+                  onchange="applyQuickTopic(this)"
+                  class="touch-target w-full px-3 py-2 border border-indigo-200 bg-indigo-50/50 rounded-xl text-xs text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                >
+                  <!-- Populated by app.js -->
+                </select>
+              </div>
+
+              <div>
+                <label for="log-topic-input" class="block text-xs font-semibold text-slate-700 mb-1">เนื้อหา / สาระการเรียนรู้ที่สอน</label>
+                <textarea 
+                  id="log-topic-input" 
+                  rows="3" 
+                  required
+                  placeholder="พิมพ์หรือเลือกจากโครงสร้างรายวิชาด้านบน..."
+                  class="w-full px-3 py-2 border border-slate-300 bg-slate-50 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                ></textarea>
+              </div>
+
+              <div>
+                <label for="log-problems-input" class="block text-xs font-semibold text-slate-700 mb-1">ปัญหา / อุปสรรค</label>
+                <textarea 
+                  id="log-problems-input" 
+                  rows="2" 
+                  placeholder="เช่น นักเรียนบางคนยังสับสนระหว่างหลักฐานชั้นต้นกับชั้นรอง..."
+                  class="w-full px-3 py-2 border border-slate-300 bg-slate-50 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                ></textarea>
+              </div>
+
+              <div>
+                <label for="log-suggestions-input" class="block text-xs font-semibold text-slate-700 mb-1">ข้อเสนอแนะ / แนวทางแก้ไข</label>
+                <textarea 
+                  id="log-suggestions-input" 
+                  rows="2" 
+                  placeholder="เช่น นำตัวอย่างภาพโบราณสถานของชุมชนมาให้วิเคราะห์ในคาบหน้า..."
+                  class="w-full px-3 py-2 border border-slate-300 bg-slate-50 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                ></textarea>
+              </div>
+
+              <button 
+                type="submit" 
+                class="touch-target w-full py-2.5 px-4 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-colors flex items-center justify-center gap-2"
+              >
+                <span>💾</span> บันทึกข้อมูล
+              </button>
+            </form>
+          </div>
+
+          <div class="lg:col-span-7 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-slate-800">ประวัติบันทึกหลังสอน</h3>
+              <button onclick="exportLessonLogsExcel()" class="text-xs font-semibold text-indigo-700 hover:text-indigo-800 flex items-center gap-1">
+                <span>📥</span> ดาวน์โหลด Excel
+              </button>
+            </div>
+
+            <div id="lesson-logs-history-list" class="space-y-3">
+              <!-- Rendered by app.js -->
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+
+
+
+
+      <!-- ========================================================
+           VIEW 5: SETTINGS & BACKUP (⚙️ ตั้งค่าข้อมูลทั่วไปและระบบ ตรงตามรูปภาพ 1-4)
+           ======================================================== -->
+      <section id="view-settings" class="hidden max-w-5xl mx-auto space-y-7 pb-16">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/90 pb-5">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-md shadow-blue-500/20 shrink-0">
+              ⚙️
+            </div>
+            <div>
+              <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>ตั้งค่าข้อมูลทั่วไปและระบบ</span>
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                กำหนดชื่อสถานศึกษา, โลโก้, ข้อมูลบุคลากรผู้ลงนาม, ระยะเวลาภาคเรียน และปฏิทินการจัดการเรียนรู้
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 self-start sm:self-center">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              ระบบบันทึกอัตโนมัติ (LocalStorage)
+            </span>
+          </div>
+        </div>
+
+        <!-- 1. ข้อมูลทั่วไปโรงเรียนและวิชา -->
+        <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-6">
+          <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
+            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg font-bold shrink-0">
+              🏫
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900">ข้อมูลทั่วไปโรงเรียนและวิชา</h3>
+              <p class="text-xs text-slate-500">ข้อมูลสถานศึกษาสำหรับพิมพ์หัวเอกสาร ปพ.5 แบบประเมิน และรายงานทางวิชาการ</p>
+            </div>
+          </div>
+
+          <!-- School Name & Logo Grid (Balanced) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <!-- School Name -->
+            <div class="lg:col-span-8 space-y-1.5">
+              <label for="set-school-name" class="block text-xs font-bold text-slate-700">ชื่อโรงเรียน / สถานศึกษา</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  🏛️
+                </span>
+                <input 
+                  type="text" 
+                  id="set-school-name" 
+                  placeholder="โรงเรียนบ้านควนเนียง" 
+                  class="touch-target w-full pl-10 pr-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none bg-slate-50/60 transition-colors"
+                />
+              </div>
+              <p class="text-[11px] text-slate-400">ชื่อสถานศึกษาจะปรากฏบนหัวเอกสาร ปพ.5 และแบบบันทึกคะแนนทุกหน้า</p>
+            </div>
+
+            <!-- School Logo Upload & Preview -->
+            <div class="lg:col-span-4 space-y-1.5">
+              <label for="set-school-logo-file" class="block text-xs font-bold text-slate-700">รูปภาพโลโก้โรงเรียน (อัปโหลดจากเครื่อง)</label>
+              <div class="flex items-center gap-3 p-2 border border-slate-200/90 rounded-xl bg-slate-50/70">
+                <img id="set-logo-preview" src="" alt="โลโก้โรงเรียน" class="hidden w-11 h-11 object-contain rounded-lg border border-slate-200 bg-white p-1 shadow-2xs shrink-0" />
+                <div class="flex-1 min-w-0">
+                  <input 
+                    type="file" 
+                    id="set-school-logo-file" 
+                    accept="image/*" 
+                    onchange="handleLogoUpload(event)"
+                    class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                  />
+                  <span class="text-[10px] text-slate-400 block truncate mt-0.5">รองรับไฟล์ PNG, JPG (ขนาดแนะนำ 1:1)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Personnel Section (3 Balanced Columns) -->
+          <div class="pt-2">
+            <div class="flex items-center gap-2 mb-3.5">
+              <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">ข้อมูลบุคลากรผู้ลงนาม</span>
+              <div class="flex-1 border-t border-slate-200"></div>
+              <span class="text-[11px] text-slate-400">สำหรับลงนามท้ายเอกสาร ปพ.5</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- ผู้อำนวยการ -->
+              <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/90 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <label for="set-director-name" class="block text-xs font-bold text-slate-700">ชื่อผู้อำนวยการโรงเรียน</label>
+                  <span class="text-[10px] font-semibold text-blue-700 bg-blue-100/70 px-1.5 py-0.5 rounded">ผู้อนุมัติ</span>
+                </div>
+                <input 
+                  type="text" 
+                  id="set-director-name" 
+                  placeholder="นางสาวอังศุมาวรรณ ฉวาง" 
+                  class="touch-target w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <!-- หัวหน้าฝ่ายวิชาการ -->
+              <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/90 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <label for="set-academic-head" class="block text-xs font-bold text-slate-700">ชื่อหัวหน้าฝ่ายวิชาการ</label>
+                  <span class="text-[10px] font-semibold text-indigo-700 bg-indigo-100/70 px-1.5 py-0.5 rounded">ผู้ตรวจสอบ</span>
+                </div>
+                <input 
+                  type="text" 
+                  id="set-academic-head" 
+                  placeholder="ว่าที่ร้อยตรีหญิงรัชฎาภรณ์ จักกระหวัด" 
+                  class="touch-target w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <!-- ครูประจำวิชา -->
+              <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/90 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <label for="set-teacher-name" class="block text-xs font-bold text-slate-700">ชื่อครูประจำวิชา</label>
+                  <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded">ผู้สอน/ประเมิน</span>
+                </div>
+                <input 
+                  type="text" 
+                  id="set-teacher-name" 
+                  placeholder="ครูกุลธรา บุญมาก" 
+                  class="touch-target w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. ตั้งค่าภาคเรียนและวันเปิด-ปิด -->
+        <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold shrink-0">
+                🗓️
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-slate-900">ตั้งค่าภาคเรียนและวันเปิด-ปิด</h3>
+                <p class="text-xs text-slate-500">ระบบจะตรวจสอบวันที่ปัจจุบันและปรับภาคเรียนให้อัตโนมัติ (Auto-Semester by Today's Date)</p>
+              </div>
+            </div>
+            <div id="auto-semester-badge" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs self-start sm:self-center">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span id="auto-semester-text">⚡ กำลังตรวจสอบภาคเรียนอัตโนมัติ...</span>
+            </div>
+          </div>
+
+          <!-- Dynamic Status Banner explaining the auto-selection -->
+          <div class="p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/60 border border-blue-200/80 rounded-xl text-xs text-blue-900 flex items-start gap-3 shadow-2xs">
+            <span class="text-xl shrink-0">💡</span>
+            <div class="leading-relaxed flex-1">
+              <span class="font-bold text-blue-950 text-sm block mb-0.5" id="auto-status-headline">สถานะภาคเรียนอัตโนมัติ:</span>
+              <span id="auto-status-detail" class="text-slate-700 text-xs">กำลังประมวลผล...</span>
+            </div>
+          </div>
+
+          <!-- Row 1: Current Semester (Auto Active) & Academic Year -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- ภาคเรียนปัจจุบัน (Auto Active) -->
+            <div class="bg-slate-50/80 p-4 rounded-xl border border-slate-200/90 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">ภาคเรียนปัจจุบัน (Auto-Adjust)</label>
+                <span class="text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Auto Active
+                </span>
+              </div>
+              <div class="w-full px-3.5 py-2.5 border border-emerald-300/80 rounded-xl bg-white flex items-center justify-between shadow-2xs">
+                <span id="set-semester-display" class="text-sm font-bold text-emerald-950">ภาคเรียนที่ 2</span>
+                <span class="text-xs text-slate-400 flex items-center gap-1">
+                  <span>⏱️</span> <span>คำนวณตามวันที่จริง</span>
+                </span>
+              </div>
+              <input type="hidden" id="set-semester-select" value="2" />
+            </div>
+
+            <!-- ปีการศึกษาปัจจุบัน -->
+            <div class="bg-slate-50/80 p-4 rounded-xl border border-slate-200/90 space-y-1.5">
+              <label for="set-academic-year" class="block text-xs font-bold text-slate-700">ปีการศึกษาปัจจุบัน</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs font-medium">
+                  พ.ศ.
+                </span>
+                <input 
+                  type="text" 
+                  id="set-academic-year" 
+                  placeholder="2569" 
+                  class="touch-target w-full pl-12 pr-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+              <p class="text-[11px] text-slate-400">ใช้สำหรับกำกับปีการศึกษาในแบบ ปพ.5 ทุกเล่ม</p>
+            </div>
+          </div>
+
+          <!-- Row 2: Term 1 & Term 2 Dates (Two Balanced Group Cards) -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            
+            <!-- Box: ภาคเรียนที่ 1 -->
+            <div class="border border-blue-200/90 rounded-xl p-4 bg-blue-50/30 space-y-3">
+              <div class="flex items-center justify-between border-b border-blue-100 pb-2">
+                <span class="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                  ภาคเรียนที่ 1 (เทอมต้น)
+                </span>
+                <span class="text-[11px] font-medium text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-full">ช่วงเดือน พ.ค. - ต.ค.</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label for="set-term1-start" class="block text-xs font-semibold text-slate-700 mb-1">วันเปิดภาคเรียนที่ 1</label>
+                  <input 
+                    type="date" 
+                    id="set-term1-start" 
+                    onchange="handleDateInputChange()" 
+                    class="touch-target w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs"
+                  />
+                </div>
+                <div>
+                  <label for="set-term1-end" class="block text-xs font-semibold text-slate-700 mb-1">วันสิ้นสุดภาคเรียนที่ 1</label>
+                  <input 
+                    type="date" 
+                    id="set-term1-end" 
+                    onchange="handleDateInputChange()" 
+                    class="touch-target w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Box: ภาคเรียนที่ 2 -->
+            <div class="border border-indigo-200/90 rounded-xl p-4 bg-indigo-50/30 space-y-3">
+              <div class="flex items-center justify-between border-b border-indigo-100 pb-2">
+                <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                  ภาคเรียนที่ 2 (เทอมปลาย)
+                </span>
+                <span class="text-[11px] font-medium text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-full">ช่วงเดือน พ.ย. - มี.ค.</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label for="set-term2-start" class="block text-xs font-semibold text-slate-700 mb-1">วันเปิดภาคเรียนที่ 2</label>
+                  <input 
+                    type="date" 
+                    id="set-term2-start" 
+                    onchange="handleDateInputChange()" 
+                    class="touch-target w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs"
+                  />
+                </div>
+                <div>
+                  <label for="set-term2-end" class="block text-xs font-semibold text-slate-700 mb-1">วันสิ้นสุดภาคเรียนที่ 2</label>
+                  <input 
+                    type="date" 
+                    id="set-term2-end" 
+                    onchange="handleDateInputChange()" 
+                    class="touch-target w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Save Button Bar -->
+          <div class="flex justify-end pt-3 border-t border-slate-100">
+            <button onclick="saveGeneralSettings()" class="touch-target px-6 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 transition-all flex items-center gap-2">
+              <span>💾</span> <span>บันทึกข้อมูลทั่วไปและภาคเรียน</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. ตั้งค่าวันหยุด (⛱️) -->
+        <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg font-bold shrink-0">
+                ⛱️
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-rose-600">ตั้งค่าวันหยุดประจำปี</h3>
+                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  กำหนดวันหยุดราชการหรือวันหยุดโรงเรียน ระบบจะแทรกลงในรายงานประจำเดือนให้อัตโนมัติและล็อกหน้าเช็คชื่อ
+                </p>
+              </div>
+            </div>
+            <button onclick="loadDefaultThaiHolidays()" class="text-xs font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3.5 py-2 rounded-xl border border-blue-200 transition-colors self-start sm:self-center shrink-0 flex items-center gap-1.5 shadow-2xs">
+              <span>✨</span> <span>โหลดวันหยุดราชการประจำปี</span>
+            </button>
+          </div>
+
+          <!-- Add Holiday Input Row -->
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+            <div class="sm:col-span-4">
+              <label for="new-holiday-date" class="block text-xs font-bold text-slate-700 mb-1.5">เลือกวันที่หยุด</label>
+              <input type="date" id="new-holiday-date" class="touch-target w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs" />
+            </div>
+            <div class="sm:col-span-5">
+              <label for="new-holiday-name" class="block text-xs font-bold text-slate-700 mb-1.5">ชื่อวันหยุด / หมายเหตุ</label>
+              <input type="text" id="new-holiday-name" placeholder="เช่น วันสุนทรภู่, วันไหว้ครู, วันหยุดชดเชย" class="touch-target w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs" />
+            </div>
+            <div class="sm:col-span-3">
+              <button onclick="addHoliday()" class="touch-target w-full py-2.5 px-4 rounded-xl text-sm font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-2xs transition-colors flex items-center justify-center gap-1.5">
+                <span>+</span> <span>เพิ่มวันหยุด</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Holidays Table -->
+          <div class="border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100/80 text-xs font-bold text-slate-600 border-b border-slate-200">
+                  <th class="py-3 px-4 w-40">วันที่</th>
+                  <th class="py-3 px-4">ชื่อวันหยุด / รายละเอียด</th>
+                  <th class="py-3 px-4 text-right w-24">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="settings-holidays-tbody">
+                <!-- Rendered by app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 4. กำหนดวันที่มีตารางสอนในสัปดาห์ (📅) -->
+        <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
+          <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
+            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg font-bold shrink-0">
+              📅
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900">กำหนดวันที่มีตารางสอนในสัปดาห์</h3>
+              <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                กำหนดวันในสัปดาห์ที่มีคาบเรียนจริงของแต่ละชั้นเรียน ระบบจะใช้คำนวณ "เวลาเรียนเต็ม" ตามสูตรปฏิทิน และล็อกวันอื่นให้อัตโนมัติ
+              </p>
+            </div>
+          </div>
+
+          <div id="teaching-schedule-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Populated by app.js -->
+          </div>
+        </div>
+
+        <!-- 5. ตั้งค่าวันชดเชยการสอน (🔄) -->
+        <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
+          <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
+            <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg font-bold shrink-0">
+              🔄
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-sky-700">ตั้งค่าวันชดเชยการสอน</h3>
+              <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                กำหนดวันหยุดสุดสัปดาห์ที่มีการนัดเรียนชดเชย โดยระบบจะจำลองตารางสอนของวันที่กำหนดมาสวมทับให้อัตโนมัติ
+              </p>
+            </div>
+          </div>
+
+          <!-- Add Makeup Day Row -->
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+            <div class="sm:col-span-5">
+              <label for="new-makeup-date" class="block text-xs font-bold text-slate-700 mb-1.5">วันที่สอนชดเชย (เช่น วันเสาร์)</label>
+              <input type="date" id="new-makeup-date" class="touch-target w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs" />
+            </div>
+            <div class="sm:col-span-4">
+              <label for="new-makeup-day" class="block text-xs font-bold text-slate-700 mb-1.5">ใช้ตารางสอนของวัน</label>
+              <select id="new-makeup-day" class="touch-target w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs">
+                <option value="วันจันทร์">วันจันทร์</option>
+                <option value="วันอังคาร">วันอังคาร</option>
+                <option value="วันพุธ">วันพุธ</option>
+                <option value="วันพฤหัสบดี">วันพฤหัสบดี</option>
+                <option value="วันศุกร์">วันศุกร์</option>
+              </select>
+            </div>
+            <div class="sm:col-span-3">
+              <button onclick="addMakeupDay()" class="touch-target w-full py-2.5 px-4 rounded-xl text-sm font-semibold bg-sky-600 hover:bg-sky-700 text-white shadow-2xs transition-colors flex items-center justify-center gap-1.5">
+                <span>+</span> <span>เพิ่มชดเชย</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Makeup Table -->
+          <div class="border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100/80 text-xs font-bold text-slate-600 border-b border-slate-200">
+                  <th class="py-3 px-4 w-48">วันที่สอนชดเชย</th>
+                  <th class="py-3 px-4">ใช้ตารางของวัน</th>
+                  <th class="py-3 px-4 text-right w-24">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="settings-makeup-tbody">
+                <!-- Rendered by app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 6. สำรองข้อมูล (Backup) (💾) -->
+        <div class="bg-gradient-to-br from-white via-white to-emerald-50/40 rounded-2xl p-6 sm:p-7 border border-emerald-200/90 shadow-xs space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-emerald-100 pb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center text-xl font-bold shrink-0">
+                💾
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-emerald-900">สำรองข้อมูลทั้งหมดในระบบ (Full System Backup)</h3>
+                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  ดาวน์โหลดข้อมูลทั้งหมด (ห้องเรียน, นักเรียน, เวลาเรียน, คะแนน, โครงสร้างวิชา, ปฏิทินวันหยุด) ออกมาเป็นไฟล์ Excel (.xlsx)
+                </p>
+              </div>
+            </div>
+            
+            <button onclick="exportAllSystemExcel()" class="touch-target px-6 py-3 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 self-start sm:self-center shrink-0">
+              <span>⬇️</span> <span>ดาวน์โหลดข้อมูลทั้งหมด (Excel)</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-slate-600 pt-1">
+            <div class="flex items-center gap-2 bg-emerald-50/60 px-3 py-2 rounded-lg border border-emerald-200/60">
+              <span>👥</span> <span>ข้อมูลนักเรียนทุกห้อง</span>
+            </div>
+            <div class="flex items-center gap-2 bg-emerald-50/60 px-3 py-2 rounded-lg border border-emerald-200/60">
+              <span>📊</span> <span>คะแนนและผลการเรียน</span>
+            </div>
+            <div class="flex items-center gap-2 bg-emerald-50/60 px-3 py-2 rounded-lg border border-emerald-200/60">
+              <span>⏱️</span> <span>สถิติการเข้าเรียนรายวัน</span>
+            </div>
+            <div class="flex items-center gap-2 bg-emerald-50/60 px-3 py-2 rounded-lg border border-emerald-200/60">
+              <span>📝</span> <span>บันทึกหลังการสอน</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. เชื่อมต่อ Cloud Database (Supabase Sync) (☁️) -->
+        <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg font-bold shrink-0">
+                ☁️
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-slate-900">เชื่อมต่อ Cloud Database (Supabase)</h3>
+                <p class="text-xs text-slate-500">ซิงค์ข้อมูลระหว่างเครื่องคอมพิวเตอร์และอุปกรณ์พกพาผ่านระบบ Cloud</p>
+              </div>
+            </div>
+            <div id="settings-cloud-sync-badge" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs self-start sm:self-center">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+              <span id="settings-cloud-sync-text">โหมดออฟไลน์ (LocalStorage)</span>
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-500 leading-relaxed">
+            ระบบทำงานได้สมบูรณ์แบบทันทีแบบ <strong>ออฟไลน์ (LocalStorage)</strong> หากต้องการสำรองหรือซิงค์ข้อมูลขึ้น Cloud สามารถระบุ Project URL และ Public Anon Key ด้านล่าง:
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label for="supabase-url-input" class="block text-xs font-bold text-slate-700">Project URL</label>
+              <input 
+                type="text" 
+                id="supabase-url-input" 
+                placeholder="https://llvznegckyvervpzsgvm.supabase.co" 
+                class="touch-target w-full px-3.5 py-2.5 border border-slate-300 bg-slate-50/70 rounded-xl text-xs sm:text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none transition-colors"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="supabase-key-input" class="block text-xs font-bold text-slate-700">Anon Public Key</label>
+              <input 
+                type="password" 
+                id="supabase-key-input" 
+                placeholder="sb_publishable_..." 
+                class="touch-target w-full px-3.5 py-2.5 border border-slate-300 bg-slate-50/70 rounded-xl text-xs sm:text-sm font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none transition-colors"
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div class="text-[11px] text-slate-400">
+              * ข้อมูลจะถูกจัดเก็บบนเครื่องอย่างปลอดภัย และเชื่อมต่อไปยังเซิร์ฟเวอร์ Supabase ของคุณเท่านั้น
+            </div>
+            <div class="flex items-center gap-2">
+              <button 
+                type="button"
+                id="manual-sync-btn"
+                onclick="manualSyncCloud()"
+                class="touch-target px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 transition-all flex items-center gap-1.5"
+              >
+                <span>🔄</span> <span>ซิงค์ข้อมูลเดี๋ยวนี้</span>
+              </button>
+              <button 
+                id="save-cloud-settings-btn"
+                onclick="saveCloudSettings()"
+                class="touch-target px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-sky-600 hover:bg-sky-700 text-white shadow-md shadow-sky-600/20 transition-all flex items-center gap-2"
+              >
+                <span>💾</span> <span>บันทึกและเชื่อมต่อ Cloud</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+
+
+      <!-- ========================================================
+           VIEW 6: CLASSROOM MANAGEMENT (จัดการข้อมูลห้องเรียน)
+           ======================================================== -->
+      <section id="view-classrooms" class="hidden max-w-6xl mx-auto space-y-6 pb-16">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/90 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xl shadow-md shadow-amber-500/20 shrink-0">
+              📁
+            </div>
+            <div>
+              <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>จัดการข้อมูลห้องเรียน</span>
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                เพิ่มหรือลบโครงสร้างห้องเรียน และตรวจสอบสถิติจำนวนนักเรียน ชาย/หญิง
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Classroom Overview Stats -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+            <div class="text-xs text-slate-500 font-semibold">ห้องเรียนทั้งหมด</div>
+            <div id="cls-stat-total-rooms" class="text-2xl font-bold text-slate-900 mt-1">0 ห้อง</div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+            <div class="text-xs text-slate-500 font-semibold">นักเรียนทั้งหมด</div>
+            <div id="cls-stat-total-students" class="text-2xl font-bold text-blue-600 mt-1">0 คน</div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+            <div class="text-xs text-slate-500 font-semibold">นักเรียนชาย</div>
+            <div id="cls-stat-boys" class="text-2xl font-bold text-indigo-600 mt-1">0 คน</div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
+            <div class="text-xs text-slate-500 font-semibold">นักเรียนหญิง</div>
+            <div id="cls-stat-girls" class="text-2xl font-bold text-pink-600 mt-1">0 คน</div>
+          </div>
+        </div>
+
+        <!-- Card 1: เพิ่มห้องเรียนใหม่ (Matching Image 1) -->
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-4">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <span class="text-lg">🏫</span>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900">เพิ่มห้องเรียนใหม่</h3>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+            <div class="flex-1">
+              <label for="new-classroom-name-input" class="block text-xs font-bold text-slate-700 mb-1">
+                ชื่อห้องเรียน
+              </label>
+              <input 
+                type="text" 
+                id="new-classroom-name-input" 
+                placeholder="เช่น ป.4/1, ป.5/2 หรือ ป.3"
+                class="touch-target w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                onkeydown="if(event.key==='Enter') saveNewClassroom()"
+              />
+            </div>
+            <button 
+              onclick="saveNewClassroom()" 
+              class="touch-target px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors flex items-center justify-center gap-1.5 shrink-0"
+            >
+              <span>+</span> <span>บันทึกห้องเรียน</span>
+            </button>
+          </div>
+          <p class="text-xs text-slate-400">
+            * คำแนะนำ: ระบุระดับชั้นและเลขห้อง เช่น ป.4/1, ม.1/2 หรือหากไม่มีการแยกห้องสามารถระบุสั้นๆ เช่น ป.4 ได้
+          </p>
+        </div>
+
+        <!-- Card 2: รายชื่อห้องเรียนทั้งหมดในระบบ (Matching Image 1) -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">📋</span>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">รายชื่อห้องเรียนทั้งหมดในระบบ</h3>
+            </div>
+            <span class="text-xs text-slate-400">เรียงตามระดับชั้น</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100/80 text-xs font-bold text-slate-600 border-b border-slate-200">
+                  <th class="py-3 px-4 w-44">ชื่อห้องเรียน</th>
+                  <th class="py-3 px-4 text-center font-bold text-slate-800 w-28">รวม (คน)</th>
+                  <th class="py-3 px-4 text-center font-semibold text-indigo-700 w-28">ชาย</th>
+                  <th class="py-3 px-4 text-center font-semibold text-pink-700 w-28">หญิง</th>
+                  <th class="py-3 px-4 text-right min-w-[200px]">จัดการข้อมูล</th>
+                </tr>
+              </thead>
+              <tbody id="classrooms-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+
+
+      <!-- ========================================================
+           VIEW 7: STUDENT REGISTRY (จัดการข้อมูลทะเบียนนักเรียน)
+           ======================================================== -->
+      <section id="view-students" class="hidden max-w-6xl mx-auto space-y-6 pb-16">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/90 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xl shadow-md shadow-indigo-500/20 shrink-0">
+              👥
+            </div>
+            <div>
+              <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>จัดการข้อมูลทะเบียนนักเรียน</span>
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                เพิ่ม ค้นหา หรือนำเข้าไฟล์รายชื่อนักเรียนรายห้องเรียน พร้อมตรวจจับเพศและคำนวณเลขที่อัตโนมัติ
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Target Classroom Bar (Single Source of Truth for Student Management) -->
+        <div class="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-purple-50/40 p-4 rounded-2xl border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+              🎯
+            </div>
+            <div>
+              <div class="text-sm font-bold text-blue-950 flex items-center gap-2">
+                <span>ห้องเรียนเป้าหมายที่กำลังจัดการ:</span>
+                <span id="student-current-target-label" class="badge-classroom text-xs font-bold">ห้อง ป.6</span>
+              </div>
+              <div class="text-xs text-blue-700">การเพิ่มเดี่ยว, นำเข้าไฟล์, วางรายชื่อ และตารางข้อมูลจะผูกกับห้องนี้ทันที</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 self-start sm:self-center">
+            <label for="student-unified-class-select" class="text-xs font-bold text-slate-700 whitespace-nowrap">สลับห้อง:</label>
+            <select 
+              id="student-unified-class-select" 
+              onchange="handleStudentUnifiedClassChange(this.value)"
+              class="touch-target px-3.5 py-1.5 border border-blue-300 rounded-xl text-xs sm:text-sm font-bold bg-white text-blue-900 focus:ring-2 focus:ring-blue-500 shadow-2xs cursor-pointer"
+            >
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Card 1: เพิ่มนักเรียนเข้าชั้นเรียน (รายบุคคล) (Matching Image 2 Card 1) -->
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-4">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <span class="text-lg">👤</span>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900">เพิ่มนักเรียนเข้าชั้นเรียน (รายบุคคล)</h3>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end">
+            <!-- ห้องเรียนเป้าหมาย (ผูกอัตโนมัติ) -->
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 mb-1">ห้องเรียน</label>
+              <div class="relative">
+                <input 
+                  type="text" 
+                  id="student-add-class-display" 
+                  readonly 
+                  value="ห้อง ป.6" 
+                  class="touch-target w-full px-3 py-2 border border-blue-200/90 rounded-xl text-sm font-bold bg-blue-50/60 text-blue-950 cursor-default"
+                />
+                <input type="hidden" id="student-add-class" value="ป.6" />
+              </div>
+            </div>
+
+            <!-- เลขที่ (Auto Next) -->
+            <div class="sm:col-span-2">
+              <div class="flex items-center justify-between mb-1">
+                <label for="student-add-no" class="block text-xs font-bold text-slate-700">เลขที่</label>
+                <span class="text-[10px] text-blue-600 font-semibold">อัตโนมัติ</span>
+              </div>
+              <input 
+                type="number" 
+                id="student-add-no" 
+                min="1"
+                class="touch-target w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold text-center bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <!-- ชื่อ-นามสกุลนักเรียน -->
+            <div class="sm:col-span-4">
+              <div class="flex items-center justify-between mb-1">
+                <label for="student-add-name" class="block text-xs font-bold text-slate-700">ชื่อ-นามสกุลนักเรียน</label>
+                <span id="student-detected-gender-pill" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-semibold transition-all">
+                  ตรวจเพศอัตโนมัติ
+                </span>
+              </div>
+              <input 
+                type="text" 
+                id="student-add-name" 
+                oninput="handleStudentNameInputLive(this.value)"
+                onkeydown="if(event.key==='Enter') saveSingleStudent()"
+                placeholder="เช่น ด.ช.สมบัติ รักเรียน หรือ ด.ญ.กัญญารัตน์"
+                class="touch-target w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm font-medium bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+              />
+            </div>
+
+            <!-- สถานะนักเรียน -->
+            <div class="sm:col-span-2">
+              <label for="student-add-status" class="block text-xs font-bold text-slate-700 mb-1">สถานะ</label>
+              <select 
+                id="student-add-status" 
+                class="touch-target w-full px-2.5 py-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
+              >
+                <option value="กำลังศึกษา" selected>กำลังศึกษา</option>
+                <option value="ย้ายออก">ย้ายออก</option>
+              </select>
+            </div>
+
+            <!-- ปุ่มบันทึก -->
+            <div class="sm:col-span-2">
+              <button 
+                onclick="saveSingleStudent()" 
+                class="touch-target w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                <span>+</span> <span>บันทึกข้อมูล</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: นำเข้ารายชื่อนักเรียน (Import from File & Quick Paste) (Matching Image 2 Card 2) -->
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">📥</span>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">นำเข้ารายชื่อนักเรียน</h3>
+            </div>
+            <!-- Sub-tab switchers for Import -->
+            <div class="flex items-center gap-1 p-1 bg-slate-100 rounded-xl self-start sm:self-auto text-xs font-medium">
+              <button 
+                id="btn-import-tab-file" 
+                onclick="switchImportTab('file')" 
+                class="px-3 py-1.5 rounded-lg bg-white text-blue-700 font-semibold shadow-2xs transition-all"
+              >
+                📁 นำเข้าจากไฟล์ (.xlsx, .csv, .txt)
+              </button>
+              <button 
+                id="btn-import-tab-paste" 
+                onclick="switchImportTab('paste')" 
+                class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all"
+              >
+                📋 คัดลอก-วางรายชื่อด่วน
+              </button>
+            </div>
+          </div>
+
+          <!-- Panel A: File Import -->
+          <div id="panel-import-file" class="space-y-3">
+            <p class="text-xs text-slate-500 leading-relaxed bg-blue-50/60 p-3 rounded-xl border border-blue-200/70">
+              💡 <strong>คำแนะนำ:</strong> เตรียมไฟล์ข้อความ (.txt) หรือไฟล์ Excel (.xlsx, .csv) โดยพิมพ์รูปแบบ: 
+              <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-800">เลขที่,ชื่อ-นามสกุล</span> 
+              (หนึ่งคนต่อหนึ่งบรรทัด) หรือมีคอลัมน์เลขที่และชื่อ-นามสกุล
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end">
+              <div class="sm:col-span-4">
+                <label class="block text-xs font-bold text-slate-700 mb-1">ห้องเรียนเป้าหมาย</label>
+                <div class="p-2 border border-blue-200/90 rounded-xl bg-blue-50/60 flex items-center justify-between">
+                  <span class="text-xs text-blue-700 font-medium">นำเข้าสู่:</span>
+                  <span id="student-import-class-display" class="badge-classroom text-xs font-bold">ห้อง ป.6</span>
+                </div>
+                <input type="hidden" id="student-import-class" value="ป.6" />
+              </div>
+
+              <div class="sm:col-span-5">
+                <label for="student-import-file" class="block text-xs font-bold text-slate-700 mb-1">เลือกไฟล์รายชื่อ</label>
+                <input 
+                  type="file" 
+                  id="student-import-file" 
+                  accept=".xlsx,.xls,.csv,.txt"
+                  class="touch-target block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer border border-slate-300 rounded-xl bg-slate-50"
+                />
+              </div>
+
+              <div class="sm:col-span-3">
+                <button 
+                  onclick="handleStudentFileImport()" 
+                  class="touch-target w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span>🚀</span> <span>เริ่มนำเข้าข้อมูลไฟล์</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel B: Quick Paste Import -->
+          <div id="panel-import-paste" class="hidden space-y-3">
+            <p class="text-xs text-slate-500 leading-relaxed bg-amber-50/60 p-3 rounded-xl border border-amber-200/70">
+              ⚡ <strong>คัดลอก-วางรายชื่อด่วน:</strong> วางรายชื่อจากไลน์ (LINE) หรือ Word ได้ทันที ระบบจะแยกเลขที่ คำนำหน้า และชื่อ-สกุลให้อัตโนมัติ
+            </p>
+
+            <div class="space-y-3">
+              <div class="w-full sm:w-1/3">
+                <label class="block text-xs font-bold text-slate-700 mb-1">ห้องเรียนเป้าหมาย</label>
+                <div class="p-2 border border-blue-200/90 rounded-xl bg-blue-50/60 flex items-center justify-between">
+                  <span class="text-xs text-blue-700 font-medium">นำเข้าสู่:</span>
+                  <span id="student-paste-class-display" class="badge-classroom text-xs font-bold">ห้อง ป.6</span>
+                </div>
+                <input type="hidden" id="student-paste-class" value="ป.6" />
+              </div>
+
+              <div>
+                <label for="student-paste-textarea" class="block text-xs font-bold text-slate-700 mb-1">
+                  วางข้อความรายชื่อ (1 บรรทัดต่อคน)
+                </label>
+                <textarea 
+                  id="student-paste-textarea" 
+                  rows="5"
+                  placeholder="ตัวอย่างการวาง:
+1 ด.ช. กัณฑ์ณภัทร พิบูลย์
+2 ด.ช. คชัมฐ์ ศรีวราพร
+3 ด.ญ. กัญญารัตน์ ชูทับ"
+                  class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs sm:text-sm font-mono bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none leading-relaxed"
+                ></textarea>
+              </div>
+
+              <div class="flex justify-end">
+                <button 
+                  onclick="handleQuickPasteImport()" 
+                  class="touch-target px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span>⚡</span> <span>แปลงและบันทึกรายชื่อทั้งหมด</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: ตรวจสอบและค้นหารายชื่อนักเรียน (Matching Image 2 Card 3) -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🔍</span>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">ตรวจสอบและค้นหารายชื่อนักเรียน</h3>
+              <span id="student-table-class-badge" class="badge-classroom text-xs font-bold ml-1">ห้อง ป.6</span>
+            </div>
+
+            <!-- Filter Bar & Search -->
+            <div class="flex flex-wrap items-center gap-2.5">
+              <div class="relative">
+                <input 
+                  type="text" 
+                  id="student-search-input" 
+                  oninput="renderStudentsView()"
+                  placeholder="พิมพ์ชื่อหรือเลขที่เพื่อค้นหา..."
+                  class="touch-target pl-8 pr-3 py-1.5 border border-slate-300 rounded-xl text-xs sm:text-sm bg-slate-50 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-44 sm:w-60"
+                />
+                <span class="absolute left-2.5 top-2.5 text-xs text-slate-400">🔍</span>
+              </div>
+
+              <button 
+                onclick="exportStudentRosterExcel()" 
+                class="touch-target px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1 cursor-pointer"
+                title="ดาวน์โหลดรายชื่อเป็น Excel"
+              >
+                <span>📄</span> <span>Excel</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100/80 text-xs font-bold text-slate-600 border-b border-slate-200">
+                  <th class="py-3 px-4 w-28">ห้องเรียน</th>
+                  <th class="py-3 px-3 text-center w-16">เลขที่</th>
+                  <th class="py-3 px-4 min-w-[180px]">ชื่อ - นามสกุล</th>
+                  <th class="py-3 px-3 text-center w-20">เพศ</th>
+                  <th class="py-3 px-3 text-center w-28">สถานะ</th>
+                  <th class="py-3 px-4 text-right w-36">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="students-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+
+      <!-- ========================================================
+           MODAL 1: EDIT CLASSROOM MODAL
+           ======================================================== -->
+      <div id="edit-classroom-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>✏️</span> <span>แก้ไขชื่อห้องเรียน</span>
+            </h3>
+            <button onclick="closeEditClassroomModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">✕</button>
+          </div>
+          <input type="hidden" id="edit-classroom-id" />
+          <div>
+            <label for="edit-classroom-name-input" class="block text-xs font-bold text-slate-700 mb-1">ชื่อห้องเรียนใหม่</label>
+            <input 
+              type="text" 
+              id="edit-classroom-name-input" 
+              class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+            />
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button onclick="closeEditClassroomModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">ยกเลิก</button>
+            <button onclick="saveEditClassroom()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer">บันทึกการแก้ไข</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           MODAL 2: EDIT STUDENT MODAL
+           ======================================================== -->
+      <div id="edit-student-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>✏️</span> <span>แก้ไขข้อมูลนักเรียน</span>
+            </h3>
+            <button onclick="closeEditStudentModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">✕</button>
+          </div>
+          <input type="hidden" id="edit-student-id" />
+          <div class="space-y-3">
+            <div>
+              <label for="edit-student-class" class="block text-xs font-bold text-slate-700 mb-1">ห้องเรียน</label>
+              <select id="edit-student-class" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+            </div>
+            <div>
+              <label for="edit-student-no" class="block text-xs font-bold text-slate-700 mb-1">เลขที่</label>
+              <input type="number" id="edit-student-no" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label for="edit-student-name" class="block text-xs font-bold text-slate-700 mb-1">ชื่อ - นามสกุล</label>
+              <input type="text" id="edit-student-name" oninput="handleEditStudentNameInput(this.value)" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label for="edit-student-gender" class="block text-xs font-bold text-slate-700 mb-1">เพศ</label>
+              <select id="edit-student-gender" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="ชาย">ชาย</option>
+                <option value="หญิง">หญิง</option>
+              </select>
+            </div>
+            <div>
+              <label for="edit-student-status" class="block text-xs font-bold text-slate-700 mb-1">สถานะ</label>
+              <select id="edit-student-status" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="กำลังศึกษา">กำลังศึกษา</option>
+                <option value="ย้ายออก">ย้ายออก</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button onclick="closeEditStudentModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">ยกเลิก</button>
+            <button onclick="saveEditStudent()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer">บันทึกการแก้ไข</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           MODAL 3: แก้ไขคะแนนเต็มดิบของตัวชี้วัด
+           ======================================================== -->
+      <div id="edit-max-score-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>⚙️</span> <span>ตั้งค่าคะแนนเต็มดิบ (ตัวชี้วัด)</span>
+            </h3>
+            <button onclick="closeEditMaxScoreModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">✕</button>
+          </div>
+          <input type="hidden" id="modal-max-score-ind-id" />
+          <input type="hidden" id="modal-max-score-default" />
+          <div class="space-y-3">
+            <div>
+              <div class="text-xs font-bold text-slate-700 mb-1">ตัวชี้วัด</div>
+              <div id="modal-max-score-ind-title" class="font-bold text-sm text-blue-900 bg-blue-50/70 p-2.5 rounded-xl border border-blue-200"></div>
+            </div>
+            <div class="bg-amber-50/80 p-3 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+              <div>💡 <strong>การแปลงคะแนนอัตโนมัติ:</strong></div>
+              <div>คุณครูสามารถกำหนดคะแนนเต็มดิบได้ตามจริง (เช่น สอบเต็ม 20 หรือ 50 คะแนน) เมื่อเก็บครบทุกตัวชี้วัดในหน่วย ระบบจะคำนวณแปลงสัดส่วนทอนกลับมาเป็นน้ำหนักคะแนนของหน่วยการเรียนรู้ให้โดยอัตโนมัติ</div>
+            </div>
+            <div>
+              <label for="modal-max-score-input" class="block text-xs font-bold text-slate-700 mb-1">
+                คะแนนเต็มดิบที่ต้องการใช้เก็บจริง (คะแนนเต็ม)
+              </label>
+              <div class="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  id="modal-max-score-input" 
+                  min="0.5" 
+                  step="0.5" 
+                  class="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-base font-bold text-center bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                />
+                <span class="text-xs font-bold text-slate-600">คะแนน</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-1" id="modal-max-score-default-hint"></div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <button type="button" onclick="resetDefaultMaxScore()" class="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer">
+              คืนค่าเริ่มต้น
+            </button>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="closeEditMaxScoreModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">ยกเลิก</button>
+              <button type="button" onclick="saveCustomMaxScore()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow-xs cursor-pointer">บันทึกคะแนนเต็ม</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           MODAL 4: แก้ไขน้ำหนักคะแนนของหน่วยการเรียนรู้
+           ======================================================== -->
+      <div id="edit-unit-weight-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>⚖️</span> <span>ตั้งค่าน้ำหนักคะแนนของหน่วยการเรียนรู้</span>
+            </h3>
+            <button onclick="closeEditUnitWeightModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">✕</button>
+          </div>
+          <input type="hidden" id="modal-unit-weight-key" />
+          <input type="hidden" id="modal-unit-weight-default" />
+          <div class="space-y-3">
+            <div>
+              <div class="text-xs font-bold text-slate-700 mb-1">หน่วยการเรียนรู้</div>
+              <div id="modal-unit-weight-title" class="font-bold text-sm text-blue-900 bg-blue-50/70 p-2.5 rounded-xl border border-blue-200"></div>
+            </div>
+            <div class="bg-blue-50/80 p-3 rounded-xl border border-blue-200 text-xs text-blue-900 space-y-1">
+              <div>📊 <strong>น้ำหนักคะแนนตาม ปพ.5:</strong></div>
+              <div>คะแนนส่วนนี้คือน้ำหนักคะแนนจริงที่จะถูกนำไปคำนวณรวมในสมุด ปพ.5 (ภาคเรียนละ 50 คะแนน / รวมทั้งปี 100 คะแนน)</div>
+            </div>
+            <div>
+              <label for="modal-unit-weight-input" class="block text-xs font-bold text-slate-700 mb-1">
+                น้ำหนักคะแนนของหน่วย (เต็ม)
+              </label>
+              <div class="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  id="modal-unit-weight-input" 
+                  min="1" 
+                  step="0.5" 
+                  class="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-base font-bold text-center bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                />
+                <span class="text-xs font-bold text-slate-600">คะแนน</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-1" id="modal-unit-weight-default-hint"></div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <button type="button" onclick="resetDefaultUnitWeight()" class="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer">
+              คืนค่าเริ่มต้น
+            </button>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="closeEditUnitWeightModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">ยกเลิก</button>
+              <button type="button" onclick="saveCustomUnitWeight()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer">บันทึกน้ำหนักหน่วย</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           MODAL 5: SUB-ASSIGNMENTS MODAL (📋 จัดการงานย่อย & บันทึกคะแนนชิ้นงาน)
+           ======================================================== -->
+      <div id="sub-assignments-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 my-auto space-y-4 max-h-[90vh] flex flex-col">
+          
+          <!-- Modal Header -->
+          <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-3 shrink-0">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xl">📋</span>
+                <h3 class="text-base sm:text-lg font-bold text-slate-900" id="sub-modal-title">จัดการงานย่อย / ชิ้นงาน</h3>
+                <span id="sub-modal-grade-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">ห้อง ป.6</span>
+                <span id="sub-modal-ind-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">ส 4.1 ป.6/1</span>
+                <span id="sub-modal-max-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">เข้า ปพ.5 เต็ม 7 คะแนน</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1" id="sub-modal-desc">
+                กำหนดชิ้นงานหรือการบ้านย่อยในตัวชี้วัดนี้ ระบบจะรวมคะแนนดิบและแปลงสัดส่วนเข้า ปพ.5 ให้อัตโนมัติ
+              </p>
+            </div>
+            <button type="button" onclick="closeSubAssignmentsModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm font-bold cursor-pointer shrink-0">
+              ✕
+            </button>
+          </div>
+
+          <!-- Section 1: Form เพิ่มงานย่อย -->
+          <div class="bg-slate-50/90 rounded-2xl p-3.5 border border-slate-200/90 shrink-0">
+            <div class="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+              <span>➕</span> <span>เพิ่มชิ้นงาน / การบ้านที่สั่งสำหรับตัวชี้วัดนี้:</span>
+            </div>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input 
+                type="text" 
+                id="sub-new-name" 
+                placeholder="ระบุชื่องานที่สั่ง เช่น ใบงาน 1.1, ผังความคิด, สมุดเล่มเล็ก, ชิ้นงาน..." 
+                class="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div class="flex items-center gap-1.5">
+                <input 
+                  type="number" 
+                  id="sub-new-max" 
+                  value="10" 
+                  min="1" 
+                  step="0.5" 
+                  class="w-24 px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-center bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="เต็ม"
+                />
+                <span class="text-xs font-semibold text-slate-500">คะแนน</span>
+              </div>
+              <button 
+                type="button" 
+                onclick="addNewSubAssignment()" 
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs cursor-pointer flex items-center justify-center gap-1 transition-all"
+              >
+                <span>➕ เพิ่มงาน</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 2: Table กรอกคะแนนงานย่อยรายนักเรียน -->
+          <div class="flex-1 overflow-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200" id="sub-table-thead">
+                <!-- Dynamically rendered -->
+              </thead>
+              <tbody id="sub-table-tbody" class="divide-y divide-slate-100 bg-white">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="flex items-center justify-between pt-3 border-t border-slate-100 shrink-0">
+            <span class="text-[11px] text-slate-500">
+              💡 คะแนนงานย่อยจะถูกรวมและแปลงสัดส่วนเข้าสมุดคะแนน ปพ.5 ให้อัตโนมัติทันที
+            </span>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="closeSubAssignmentsModal()" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 cursor-pointer transition-colors">
+                ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ========================================================
+           MODAL 6: PENDING WORK TRACKER (🚨 ศูนย์ติดตาม & ตรวจสอบงานค้างทั้งห้อง)
+           ======================================================== -->
+      <div id="pending-work-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 my-auto space-y-5 max-h-[90vh] flex flex-col">
+          
+          <!-- Modal Header -->
+          <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-4 shrink-0">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xl">🚨</span>
+                <h3 class="text-base sm:text-lg font-bold text-slate-900">ศูนย์ติดตามและตรวจสอบงานค้าง</h3>
+                <span id="pending-modal-grade-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">ห้อง ป.6</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">
+                ตรวจสอบชิ้นงานที่นักเรียนยังไม่ได้ส่ง เพื่อแจ้งเตือนและติดตามงานค้างก่อนสรุปผลการเรียน
+              </p>
+            </div>
+            <button type="button" onclick="closePendingWorkModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm font-bold cursor-pointer shrink-0">
+              ✕
+            </button>
+          </div>
+
+          <!-- Quick Stats & LINE Action -->
+          <div class="bg-gradient-to-r from-amber-50 to-orange-50/70 p-4 rounded-2xl border border-amber-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
+            <div>
+              <div class="text-xs font-bold text-amber-900 flex items-center gap-2">
+                <span>📋 สถานะการส่งงาน:</span>
+                <span id="pending-modal-summary-text" class="text-rose-700 font-extrabold">พบค้างส่ง 0 คน (รวม 0 ชิ้นงาน)</span>
+              </div>
+              <p class="text-[11px] text-amber-700 mt-0.5">
+                คลิกปุ่มด้านขวาเพื่อคัดลอกรายชื่อไปส่งแจ้งเตือนใน LINE กลุ่มผู้ปกครอง/นักเรียน
+              </p>
+            </div>
+            <button 
+              type="button" 
+              onclick="copyPendingWorkLineText()" 
+              class="touch-target px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-all self-stretch sm:self-auto justify-center"
+            >
+              <span>💬</span> <span>คัดลอกข้อความส่ง LINE</span>
+            </button>
+          </div>
+
+          <!-- View Mode Toggle -->
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-2 shrink-0">
+            <button 
+              type="button" 
+              id="pending-tab-student" 
+              onclick="switchPendingWorkTab('student')" 
+              class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 cursor-pointer"
+            >
+              👥 รายคน (รายชื่อนักเรียน)
+            </button>
+            <button 
+              type="button" 
+              id="pending-tab-task" 
+              onclick="switchPendingWorkTab('task')" 
+              class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
+            >
+              📝 รายชิ้นงานที่สั่ง
+            </button>
+          </div>
+
+          <!-- Content List Container -->
+          <div id="pending-modal-content-list" class="flex-1 overflow-y-auto space-y-3 pr-1">
+            <!-- Dynamically rendered -->
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="flex items-center justify-between pt-3 border-t border-slate-100 shrink-0">
+            <span class="text-[11px] text-slate-400">
+              💡 คลิกที่ชื่อนักเรียนที่ค้างงานเพื่อดูรายการงาน หรือคัดลอกข้อความ LINE แจ้งเตือนรายบุคคลได้ทันที
+            </span>
+            <button type="button" onclick="closePendingWorkModal()" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 cursor-pointer transition-colors">
+              ปิดหน้าต่าง
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ========================================================
+       MOBILE BOTTOM NAVIGATION BAR (Touch Optimized)
+       ======================================================== -->
+  <nav class="lg:hidden bg-white border-t border-slate-200/90 flex items-center justify-around px-2 z-40 shrink-0 shadow-sm">
+    <button data-view="dashboard" class="mobile-nav-btn flex-1 py-2 flex flex-col items-center justify-center text-blue-600 font-semibold touch-target">
+      <span class="text-base">🏠</span>
+      <span class="text-[10px] mt-0.5">แดชบอร์ด</span>
+    </button>
+
+    <button data-view="attendance" class="mobile-nav-btn flex-1 py-2 flex flex-col items-center justify-center text-slate-500 font-normal hover:text-slate-800 touch-target">
+      <span class="text-base">✅</span>
+      <span class="text-[10px] mt-0.5">เช็คชื่อ</span>
+    </button>
+
+    <button data-view="gradebook" class="mobile-nav-btn flex-1 py-2 flex flex-col items-center justify-center text-slate-500 font-normal hover:text-slate-800 touch-target">
+      <span class="text-base">🔥</span>
+      <span class="text-[10px] mt-0.5">คะแนน</span>
+    </button>
+
+    <button data-view="pp5_summary" class="mobile-nav-btn flex-1 py-2 flex flex-col items-center justify-center text-slate-500 font-normal hover:text-slate-800 touch-target">
+      <span class="text-base">📑</span>
+      <span class="text-[10px] mt-0.5">ปพ.5</span>
+    </button>
+
+    <button data-view="settings" class="mobile-nav-btn flex-1 py-2 flex flex-col items-center justify-center text-slate-500 font-normal hover:text-slate-800 touch-target">
+      <span class="text-base">⚙️</span>
+      <span class="text-[10px] mt-0.5">ตั้งค่า</span>
+    </button>
+  </nav>
+
+    <!-- Main JavaScript Controller -->
+  <script src="app.js?v=20261116x"></script>
+</body>
+</html>
