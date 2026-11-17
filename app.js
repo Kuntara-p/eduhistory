@@ -28,8 +28,8 @@ const CURRICULUM_DATA = {
         hours: 8,
         score: 15,
         indicators: [
-          { code: 'ส 4.1 ป.6/1', type: 'ระหว่างทาง', desc: 'อธิบายความสำคัญของวิธีการทางประวัติศาสตร์ ในการศึกษาเรื่องราวทางประวัติศาสตร์อย่างง่าย ๆ', max: 7 },
-          { code: 'ส 4.1 ป.6/2', type: 'ปลายทาง', desc: 'นำเสนอข้อมูลจากหลักฐานที่หลากหลายในการทำความเข้าใจเรื่องราวสำคัญในอดีต', max: 8 }
+          { code: 'ส 4.1 ป.6/1', type: 'ระหว่างทาง', desc: 'อธิบายความสำคัญของวิธีการทางประวัติศาสตร์ ในการศึกษาเรื่องราวทางประวัติศาสตร์อย่างง่าย ๆ', max: 10 },
+          { code: 'ส 4.1 ป.6/2', type: 'ปลายทาง', desc: 'นำเสนอข้อมูลจากหลักฐานที่หลากหลายในการทำความเข้าใจเรื่องราวสำคัญในอดีต', max: 10 }
         ],
         topics: [
           'การศึกษาประวัติศาสตร์ไทยโดยวิธีการทางประวัติศาสตร์',
@@ -123,9 +123,9 @@ const CURRICULUM_DATA = {
         hours: 11,
         score: 20,
         indicators: [
-          { code: 'ส 4.1 ป.5/1', type: 'ปลายทาง', desc: 'สืบค้นความเป็นมาของท้องถิ่นโดยใช้หลักฐานที่หลากหลาย', max: 6 },
-          { code: 'ส 4.1 ป.5/2', type: 'ปลายทาง', desc: 'รวบรวมข้อมูลจากแหล่งต่าง ๆ เพื่อตอบคำถามทางประวัติศาสตร์อย่างมีเหตุผล', max: 6 },
-          { code: 'ส 4.1 ป.5/3', type: 'ระหว่างทาง', desc: 'อธิบายความแตกต่างระหว่างความจริงกับข้อเท็จจริงเกี่ยวกับเรื่องราวในท้องถิ่น', max: 8 }
+          { code: 'ส 4.1 ป.5/1', type: 'ปลายทาง', desc: 'สืบค้นความเป็นมาของท้องถิ่นโดยใช้หลักฐานที่หลากหลาย', max: 10 },
+          { code: 'ส 4.1 ป.5/2', type: 'ปลายทาง', desc: 'รวบรวมข้อมูลจากแหล่งต่าง ๆ เพื่อตอบคำถามทางประวัติศาสตร์อย่างมีเหตุผล', max: 10 },
+          { code: 'ส 4.1 ป.5/3', type: 'ระหว่างทาง', desc: 'อธิบายความแตกต่างระหว่างความจริงกับข้อเท็จจริงเกี่ยวกับเรื่องราวในท้องถิ่น', max: 10 }
         ],
         topics: [
           'ท้องถิ่นของเราและการสืบค้นความเป็นมาของท้องถิ่น',
@@ -142,8 +142,8 @@ const CURRICULUM_DATA = {
         hours: 7,
         score: 15,
         indicators: [
-          { code: 'ส 4.2 ป.5/1', type: 'ระหว่างทาง', desc: 'อธิบายอิทธิพลของอารยธรรมอินเดียและจีนที่มีต่อไทยและเอเชียตะวันออกเฉียงใต้ โดยสังเขป', max: 8 },
-          { code: 'ส 4.2 ป.5/2', type: 'ปลายทาง', desc: 'อภิปรายอิทธิพลของวัฒนธรรมต่างชาติที่มีต่อสังคมไทยปัจจุบันโดยสังเขป', max: 7 }
+          { code: 'ส 4.2 ป.5/1', type: 'ระหว่างทาง', desc: 'อธิบายอิทธิพลของอารยธรรมอินเดียและจีนที่มีต่อไทยและเอเชียตะวันออกเฉียงใต้ โดยสังเขป', max: 10 },
+          { code: 'ส 4.2 ป.5/2', type: 'ปลายทาง', desc: 'อภิปรายอิทธิพลของวัฒนธรรมต่างชาติที่มีต่อสังคมไทยปัจจุบันโดยสังเขป', max: 10 }
         ],
         topics: [
           'อารยธรรมอินเดียและอารยธรรมจีนที่มีต่อไทยและเอเชียตะวันออกเฉียงใต้',
@@ -445,7 +445,7 @@ const DEFAULT_STUDENTS = [
   // ป.5 (รวม 9 คน: ชาย 4, หญิง 5 - บันทึกเวลาเรียนจริง ป.5 เทอม 1)
   { id: 'P51-01', student_no: 1, name: 'ด.ช. กัณฑ์ณภัทร พิบูลย์', grade: 'ป.5', room: '1', gender: 'ชาย' },
   { id: 'P51-02', student_no: 2, name: 'ด.ช. คริษฐ์ ศรีจราพร', grade: 'ป.5', room: '1', gender: 'ชาย' },
-  { id: 'P51-03', student_no: 3, name: 'ด.ช. โท ศรีจราพร', grade: 'ป.5', room: '1', gender: 'ชาย' },
+  { id: 'P51-03', student_no: 3, name: 'ด.ช. โก ศรีจราพร', grade: 'ป.5', room: '1', gender: 'ชาย' },
   { id: 'P51-04', student_no: 4, name: 'ด.ช. ชาย ศรีจราพร', grade: 'ป.5', room: '1', gender: 'ชาย' },
   { id: 'P51-05', student_no: 5, name: 'ด.ญ. กัญญารัตน์ ชูทับ', grade: 'ป.5', room: '1', gender: 'หญิง' },
   { id: 'P51-06', student_no: 6, name: 'ด.ญ. ธนภรณ์ วงค์สวัสดิ์', grade: 'ป.5', room: '1', gender: 'หญิง' },
@@ -521,22 +521,23 @@ const DEFAULT_LESSON_LOGS = [
 ];
 
 const DEFAULT_SCORES = {
-  'P61-01': { 'ส 4.1 ป.6/1': 6.5, 'ส 4.1 ป.6/2': 7.5, 'ส 4.2 ป.6/1': 9.5, 'ส 4.2 ป.6/2': 9, 'สอบกลางปี': 14 },
-  'P61-02': { 'ส 4.1 ป.6/1': 5.5, 'ส 4.1 ป.6/2': 6.5, 'ส 4.2 ป.6/1': 8, 'ส 4.2 ป.6/2': 8, 'สอบกลางปี': 12 },
-  'P61-04': { 'ส 4.1 ป.6/1': 7, 'ส 4.1 ป.6/2': 8, 'ส 4.2 ป.6/1': 10, 'ส 4.2 ป.6/2': 10, 'สอบกลางปี': 15 },
-  'P61-05': { 'ส 4.1 ป.6/1': 6, 'ส 4.1 ป.6/2': 7, 'ส 4.2 ป.6/1': 9, 'ส 4.2 ป.6/2': 8.5, 'สอบกลางปี': 13 },
-  'P61-06': { 'ส 4.1 ป.6/1': 5, 'ส 4.1 ป.6/2': 6, 'ส 4.2 ป.6/1': 7.5, 'ส 4.2 ป.6/2': 7, 'สอบกลางปี': 11 },
-  'P61-07': { 'ส 4.1 ป.6/1': 6.5, 'ส 4.1 ป.6/2': 7, 'ส 4.2 ป.6/1': 8.5, 'ส 4.2 ป.6/2': 9, 'สอบกลางปี': 13 },
-  // ป.5 (ส 15102 - ตัวชี้วัดจริงเทอม 1)
-  'P51-01': { 'ส 4.1 ป.5/1': 5.5, 'ส 4.1 ป.5/2': 5.5, 'ส 4.1 ป.5/3': 7, 'ส 4.2 ป.5/1': 7, 'ส 4.2 ป.5/2': 6, 'สอบกลางปี': 13 },
-  'P51-02': { 'ส 4.1 ป.5/1': 5, 'ส 4.1 ป.5/2': 5, 'ส 4.1 ป.5/3': 6, 'ส 4.2 ป.5/1': 6.5, 'ส 4.2 ป.5/2': 5.5, 'สอบกลางปี': 11 },
-  'P51-03': { 'ส 4.1 ป.5/1': 6, 'ส 4.1 ป.5/2': 6, 'ส 4.1 ป.5/3': 7.5, 'ส 4.2 ป.5/1': 7.5, 'ส 4.2 ป.5/2': 6.5, 'สอบกลางปี': 14 },
-  'P51-04': { 'ส 4.1 ป.5/1': 4.5, 'ส 4.1 ป.5/2': 4, 'ส 4.1 ป.5/3': 5, 'ส 4.2 ป.5/1': 5.5, 'ส 4.2 ป.5/2': 5, 'สอบกลางปี': 10 },
-  'P51-05': { 'ส 4.1 ป.5/1': 6, 'ส 4.1 ป.5/2': 6, 'ส 4.1 ป.5/3': 8, 'ส 4.2 ป.5/1': 8, 'ส 4.2 ป.5/2': 7, 'สอบกลางปี': 15 },
-  'P51-06': { 'ส 4.1 ป.5/1': 5.5, 'ส 4.1 ป.5/2': 5, 'ส 4.1 ป.5/3': 7, 'ส 4.2 ป.5/1': 7, 'ส 4.2 ป.5/2': 6, 'สอบกลางปี': 12.5 },
-  'P51-07': { 'ส 4.1 ป.5/1': 5, 'ส 4.1 ป.5/2': 5.5, 'ส 4.1 ป.5/3': 6.5, 'ส 4.2 ป.5/1': 6.5, 'ส 4.2 ป.5/2': 5.5, 'สอบกลางปี': 12 },
-  'P51-08': { 'ส 4.1 ป.5/1': 6, 'ส 4.1 ป.5/2': 5.5, 'ส 4.1 ป.5/3': 7.5, 'ส 4.2 ป.5/1': 7.5, 'ส 4.2 ป.5/2': 6.5, 'สอบกลางปี': 14 },
-  'P51-09': { 'ส 4.1 ป.5/1': 6, 'ส 4.1 ป.5/2': 6, 'ส 4.1 ป.5/3': 8, 'ส 4.2 ป.5/1': 8, 'ส 4.2 ป.5/2': 7, 'สอบกลางปี': 14.5 }
+  // ป.6 (ส 16102 - คะแนนจริงเทอม 1)
+  'P61-01': { 'ส 4.1 ป.6/1': 8, 'ส 4.1 ป.6/2': 8, 'ส 4.2 ป.6/1': 8, 'ส 4.2 ป.6/2': 8, 'สอบกลางปี': 10 },
+  'P61-02': { 'ส 4.1 ป.6/1': 9, 'ส 4.1 ป.6/2': 8, 'ส 4.2 ป.6/1': 9, 'ส 4.2 ป.6/2': 9, 'สอบกลางปี': 12 },
+  'P61-04': { 'ส 4.1 ป.6/1': 7, 'ส 4.1 ป.6/2': 8, 'ส 4.2 ป.6/1': 7, 'ส 4.2 ป.6/2': 8, 'สอบกลางปี': 9 },
+  'P61-05': { 'ส 4.1 ป.6/1': 7, 'ส 4.1 ป.6/2': 7, 'ส 4.2 ป.6/1': 7, 'ส 4.2 ป.6/2': 7, 'สอบกลางปี': 8 },
+  'P61-06': { 'ส 4.1 ป.6/1': 9, 'ส 4.1 ป.6/2': 7, 'ส 4.2 ป.6/1': 8, 'ส 4.2 ป.6/2': 8, 'สอบกลางปี': 9 },
+  'P61-07': { 'ส 4.1 ป.6/1': 9, 'ส 4.1 ป.6/2': 9, 'ส 4.2 ป.6/1': 8, 'ส 4.2 ป.6/2': 8, 'สอบกลางปี': 11 },
+  // ป.5 (ส 15102 - คะแนนจริงเทอม 1)
+  'P51-01': { 'ส 4.1 ป.5/1': 7, 'ส 4.1 ป.5/2': 7, 'ส 4.1 ป.5/3': 7, 'ส 4.2 ป.5/1': 8, 'ส 4.2 ป.5/2': 8, 'สอบกลางปี': 8 },
+  'P51-02': { 'ส 4.1 ป.5/1': 7, 'ส 4.1 ป.5/2': 7, 'ส 4.1 ป.5/3': 7, 'ส 4.2 ป.5/1': 7, 'ส 4.2 ป.5/2': 7, 'สอบกลางปี': 8 },
+  'P51-03': { 'ส 4.1 ป.5/1': 7, 'ส 4.1 ป.5/2': 7, 'ส 4.1 ป.5/3': 7, 'ส 4.2 ป.5/1': 7, 'ส 4.2 ป.5/2': 7, 'สอบกลางปี': 8 },
+  'P51-04': { 'ส 4.1 ป.5/1': 8, 'ส 4.1 ป.5/2': 8, 'ส 4.1 ป.5/3': 8, 'ส 4.2 ป.5/1': 9, 'ส 4.2 ป.5/2': 9, 'สอบกลางปี': 12 },
+  'P51-05': { 'ส 4.1 ป.5/1': 7, 'ส 4.1 ป.5/2': 7, 'ส 4.1 ป.5/3': 7, 'ส 4.2 ป.5/1': 7, 'ส 4.2 ป.5/2': 7, 'สอบกลางปี': 8 },
+  'P51-06': { 'ส 4.1 ป.5/1': 8, 'ส 4.1 ป.5/2': 8, 'ส 4.1 ป.5/3': 8, 'ส 4.2 ป.5/1': 8, 'ส 4.2 ป.5/2': 8, 'สอบกลางปี': 10 },
+  'P51-07': { 'ส 4.1 ป.5/1': 7, 'ส 4.1 ป.5/2': 7, 'ส 4.1 ป.5/3': 7, 'ส 4.2 ป.5/1': 8, 'ส 4.2 ป.5/2': 8, 'สอบกลางปี': 8 },
+  'P51-08': { 'ส 4.1 ป.5/1': 9, 'ส 4.1 ป.5/2': 9, 'ส 4.1 ป.5/3': 9, 'ส 4.2 ป.5/1': 9, 'ส 4.2 ป.5/2': 9, 'สอบกลางปี': 13 },
+  'P51-09': { 'ส 4.1 ป.5/1': 8, 'ส 4.1 ป.5/2': 7, 'ส 4.1 ป.5/3': 7, 'ส 4.2 ป.5/1': 8, 'ส 4.2 ป.5/2': 8, 'สอบกลางปี': 11 }
 };
 
 // งานย่อยรายตัวชี้วัด (Sub-Assignments per Indicator)
@@ -580,94 +581,34 @@ const DEFAULT_SUB_SCORES = {
 };
 
 function buildDefaultAttendance() {
-  const holidays = ['2026-06-01', '2026-06-03', '2026-07-28', '2026-07-29', '2026-07-30', '2026-07-31', '2026-08-12'];
-  const term1Days = [];
-  let d = new Date('2026-05-18');
-  const end = new Date('2026-10-12');
-  while (d <= end) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const dateStr = `${y}-${m}-${day}`;
-    const dayOfWeek = d.getDay();
-    // Monday to Thursday (Friday is no-teaching for P.5)
-    if (dayOfWeek !== 0 && dayOfWeek !== 6 && dayOfWeek !== 5) {
-      if (!holidays.includes(dateStr)) {
-        term1Days.push(dateStr);
-      }
-    }
-    d.setDate(d.getDate() + 1);
-  }
-
-  // Exact targets matching User's Semester 1 Report (ป.5/1)
-  const targets = {
-    'P51-01': { absent: 11, leave: 0, sick: 0 },
-    'P51-02': { absent: 3, leave: 0, sick: 0 },
-    'P51-03': { absent: 5, leave: 0, sick: 0 },
-    'P51-04': { absent: 6, leave: 2, sick: 0 },
-    'P51-05': { absent: 0, leave: 1, sick: 0 },
-    'P51-06': { absent: 1, leave: 1, sick: 0 },
-    'P51-07': { absent: 14, leave: 0, sick: 0 },
-    'P51-08': { absent: 1, leave: 1, sick: 0 },
-    'P51-09': { absent: 8, leave: 5, sick: 0 }
-  };
+  const dates = [
+    '2026-05-21', '2026-05-28',
+    '2026-06-04', '2026-06-11', '2026-06-18', '2026-06-25',
+    '2026-07-02', '2026-07-09', '2026-07-16', '2026-07-23',
+    '2026-08-06', '2026-08-13', '2026-08-20', '2026-08-27',
+    '2026-09-03', '2026-09-10', '2026-09-17', '2026-09-24',
+    '2026-10-01', '2026-10-08'
+  ];
   const att = {};
-  term1Days.forEach(date => {
+  dates.forEach(date => {
     att[date] = {
       'P51-01': 'มา', 'P51-02': 'มา', 'P51-03': 'มา',
       'P51-04': 'มา', 'P51-05': 'มา', 'P51-06': 'มา',
       'P51-07': 'มา', 'P51-08': 'มา', 'P51-09': 'มา',
       'P61-01': 'มา', 'P61-02': 'มา',
-      'P61-04': 'มา', 'P61-05': 'มา', 'P61-06': date.endsWith('26') ? 'ลา' : 'มา',
+      'P61-04': 'มา', 'P61-05': 'มา', 'P61-06': 'มา',
       'P61-07': 'มา'
     };
   });
-
-  // Known September 2026 records matching User's Monthly Matrix Screenshot exactly
-  att['2026-09-01']['P51-09'] = 'ลา';
-  att['2026-09-02']['P51-09'] = 'ลา';
-  att['2026-09-08']['P51-01'] = 'ขาด';
-  att['2026-09-08']['P51-07'] = 'ขาด';
-  att['2026-09-09']['P51-02'] = 'ขาด';
-  att['2026-09-09']['P51-09'] = 'ขาด';
-  att['2026-09-10']['P51-07'] = 'ขาด';
-  att['2026-09-15']['P51-07'] = 'ขาด';
-  att['2026-09-16']['P51-01'] = 'ขาด';
-  att['2026-09-16']['P51-09'] = 'ขาด';
-  att['2026-09-22']['P51-08'] = 'ขาด';
-
-  const nonSepDays = term1Days.filter(date => !date.startsWith('2026-09'));
-  Object.keys(targets).forEach(sid => {
-    let currAbsent = 0, currLeave = 0, currSick = 0;
-    term1Days.forEach(d => {
-      const s = att[d][sid];
-      if (s === 'ขาด') currAbsent++;
-      if (s === 'ลา') currLeave++;
-      if (s === 'ป่วย') currSick++;
-    });
-
-    const neededAbsent = targets[sid].absent - currAbsent;
-    const neededLeave = targets[sid].leave - currLeave;
-    const neededSick = targets[sid].sick - currSick;
-
-    let assignedAbsent = 0, assignedLeave = 0, assignedSick = 0;
-    for (let i = 0; i < nonSepDays.length; i++) {
-      const day = nonSepDays[(i * 7 + 3) % nonSepDays.length];
-      if (att[day][sid] === 'มา') {
-        if (assignedAbsent < neededAbsent) {
-          att[day][sid] = 'ขาด';
-          assignedAbsent++;
-        } else if (assignedLeave < neededLeave) {
-          att[day][sid] = 'ลา';
-          assignedLeave++;
-        } else if (assignedSick < neededSick) {
-          att[day][sid] = 'ป่วย';
-          assignedSick++;
-        }
-      }
-    }
-  });
-
+  // ป.5 ลา (ล)
+  att['2026-07-23']['P51-04'] = 'ลา';
+  att['2026-07-23']['P51-06'] = 'ลา';
+  att['2026-07-23']['P51-08'] = 'ลา';
+  att['2026-08-13']['P51-05'] = 'ลา';
+  // ป.6 ขาด (ข)
+  att['2026-07-23']['P61-06'] = 'ขาด';
+  att['2026-09-10']['P61-04'] = 'ขาด';
+  att['2026-09-10']['P61-06'] = 'ขาด';
   return att;
 }
 
@@ -2472,6 +2413,7 @@ function renderMonthlyAttendanceTab() {
     .filter(s => isStudentInClassroom(s, { grade: currentGrade, name: currentGrade, room: state.currentRoom }))
     .sort((a, b) => Number(a.student_no) - Number(b.student_no));
 
+  const activeStudents = students.filter(s => s.status !== 'ย้ายออก');
   const daysMeta = [];
   let totalTaughtPeriods = 0;
 
@@ -2505,11 +2447,12 @@ function renderMonthlyAttendanceTab() {
       title = `วันที่ ${d} (${dayShort}) - คาบเรียนปกติ`;
     }
 
-    if (isTeachingDay) {
+    const isDayRecorded = isTeachingDay && activeStudents.some(st => state.attendance[dateStr] && state.attendance[dateStr][st.id] !== undefined);
+    if (isDayRecorded) {
       totalTaughtPeriods++;
     }
 
-    daysMeta.push({ day: d, dateStr, dayShort, isWeekend, isTeachingDay, cellType, title });
+    daysMeta.push({ day: d, dateStr, dayShort, isWeekend, isTeachingDay, isDayRecorded, cellType, title });
   }
 
   // 4. Calculate Aggregate Stats
@@ -2518,15 +2461,13 @@ function renderMonthlyAttendanceTab() {
   let totalLeaveCount = 0;
   let totalSickCount = 0;
 
-  const activeStudents = students.filter(s => s.status !== 'ย้ายออก');
-
   const studentSummaries = students.map(student => {
     const isTransferred = student.status === 'ย้ายออก';
     let p = 0, a = 0, l = 0, s = 0;
     if (!isTransferred) {
       daysMeta.forEach(dm => {
         if (dm.isTeachingDay) {
-          const record = (state.attendance[dm.dateStr] && state.attendance[dm.dateStr][student.id]) || 'มา';
+          const record = state.attendance[dm.dateStr] && state.attendance[dm.dateStr][student.id];
           if (record === 'มา') p++;
           else if (record === 'ขาด') a++;
           else if (record === 'ลา') l++;
@@ -2633,9 +2574,9 @@ function renderMonthlyAttendanceTab() {
         } else if (isTransferred) {
           html += `<td class="matrix-cell text-slate-300 bg-slate-50/50 cursor-not-allowed" title="${student.name} (ย้ายออกแล้ว)">-</td>`;
         } else {
-          const status = (state.attendance[dm.dateStr] && state.attendance[dm.dateStr][student.id]) || 'มา';
-          let symbol = '';
-          let badgeColor = '';
+          const status = state.attendance[dm.dateStr] && state.attendance[dm.dateStr][student.id];
+          let symbol = '-';
+          let badgeColor = 'text-slate-300 font-normal';
           if (status === 'มา') {
             symbol = '✓';
             badgeColor = 'text-emerald-600 font-bold';
@@ -2650,11 +2591,15 @@ function renderMonthlyAttendanceTab() {
             badgeColor = 'text-sky-600 font-bold';
           }
 
+          const cellTitle = status 
+            ? `แตะเพื่อสลับสถานะ: ${student.name} วันที่ ${dm.day} (${status})`
+            : `ยังไม่ได้เช็คชื่อ วันที่ ${dm.day} (แตะเพื่อบันทึกเวลาเรียน)`;
+
           html += `
             <td 
               class="matrix-cell ${badgeColor} hover:bg-blue-100/70 active:scale-95 transition-all cursor-pointer" 
               onclick="toggleMonthlyCellStatus('${dm.dateStr}', '${student.id}')"
-              title="แตะเพื่อสลับสถานะ: ${student.name} วันที่ ${dm.day} (${status})"
+              title="${cellTitle}"
             >
               ${symbol}
             </td>
@@ -2693,10 +2638,11 @@ window.toggleMonthlyCellStatus = function(dateStr, studentId) {
     return;
   }
   if (!state.attendance[dateStr]) state.attendance[dateStr] = {};
-  const current = state.attendance[dateStr][studentId] || 'มา';
+  const current = state.attendance[dateStr][studentId];
   
   let next = 'มา';
-  if (current === 'มา') next = 'ขาด';
+  if (!current) next = 'มา';
+  else if (current === 'มา') next = 'ขาด';
   else if (current === 'ขาด') next = 'ลา';
   else if (current === 'ลา') next = 'ป่วย';
   else if (current === 'ป่วย') next = 'มา';
@@ -3127,11 +3073,12 @@ window.exportMonthlyAttendanceExcel = function() {
       } else if (dm.cellType === 'noTeaching') {
         row.push('ไม่มีคาบ');
       } else {
-        const status = (state.attendance[dm.dateStr] && state.attendance[dm.dateStr][student.id]) || 'มา';
+        const status = state.attendance[dm.dateStr] && state.attendance[dm.dateStr][student.id];
         if (status === 'มา') { p++; row.push('✓'); }
         else if (status === 'ขาด') { a++; row.push('ข'); }
         else if (status === 'ลา') { l++; row.push('ล'); }
         else if (status === 'ป่วย') { sk++; row.push('ป'); }
+        else { row.push('-'); }
       }
     });
     row.push(p, a, l, sk);
@@ -8080,11 +8027,21 @@ window.openEditStudentModal = function(id) {
 
   if (modal && idInp && classSel && noInp && nameInp && genderSel) {
     idInp.value = student.id;
-    const classrooms = state.classrooms || DEFAULT_CLASSROOMS;
+    const classrooms = (state.classrooms && state.classrooms.length > 0) ? state.classrooms : DEFAULT_CLASSROOMS;
     classSel.innerHTML = classrooms.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
     
-    const currentFull = student.room ? `${student.grade}/${student.room}` : student.grade;
-    classSel.value = currentFull;
+    const matchedCls = classrooms.find(c => isStudentInClassroom(student, c));
+    if (matchedCls) {
+      classSel.value = matchedCls.name;
+    } else {
+      const currentFull = (student.room && student.room !== '1') ? `${student.grade}/${student.room}` : student.grade;
+      classSel.value = currentFull;
+      if (!classSel.value && classrooms.some(c => c.name === student.grade)) {
+        classSel.value = student.grade;
+      } else if (!classSel.value && classrooms[0]) {
+        classSel.value = classrooms[0].name;
+      }
+    }
     noInp.value = student.student_no;
     nameInp.value = student.name;
     genderSel.value = student.gender || detectGenderFromName(student.name);
@@ -8118,16 +8075,26 @@ window.saveEditStudent = function() {
   const student = state.students.find(s => s.id === id);
   if (!student) return;
 
-  const targetClass = classSel.value;
-  let grade = targetClass;
-  let room = '1';
-  if (targetClass.includes('/')) {
-    const parts = targetClass.split('/');
-    grade = parts[0].trim();
-    room = parts[1].trim();
+  const classrooms = (state.classrooms && state.classrooms.length > 0) ? state.classrooms : DEFAULT_CLASSROOMS;
+  const targetClass = (classSel.value || '').trim();
+  const matchedCls = classrooms.find(c => c.name === targetClass);
+
+  let grade = student.grade;
+  let room = student.room || '1';
+  if (matchedCls) {
+    grade = matchedCls.grade || (matchedCls.name.includes('/') ? matchedCls.name.split('/')[0].trim() : matchedCls.name);
+    room = matchedCls.room || (matchedCls.name.includes('/') ? matchedCls.name.split('/')[1].trim() : '1');
+  } else if (targetClass) {
+    grade = targetClass;
+    room = '1';
+    if (targetClass.includes('/')) {
+      const parts = targetClass.split('/');
+      grade = parts[0].trim();
+      room = parts[1].trim();
+    }
   }
 
-  student.grade = grade;
+  if (grade) student.grade = grade;
   student.room = room;
   student.student_no = parseInt(noInp.value) || student.student_no;
   student.name = nameInp.value.trim() || student.name;
