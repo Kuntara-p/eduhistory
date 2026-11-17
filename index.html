@@ -87,6 +87,23 @@
         <input type="hidden" id="class-selector-room" value="1" />
       </div>
 
+      <!-- Academic Year Selector & Archive Switcher -->
+      <div class="flex items-center bg-purple-50/80 border border-purple-200/90 rounded-xl px-2.5 py-1 shadow-2xs hover:border-purple-400 transition-colors">
+        <label for="global-year-selector" class="sr-only">ปีการศึกษา</label>
+        <span class="text-xs text-purple-700 font-bold mr-1.5 flex items-center gap-1">
+          <span>📅</span> <span>ปี:</span>
+        </span>
+        <select id="global-year-selector" onchange="handleGlobalYearChange(this.value)" class="bg-transparent font-bold text-xs sm:text-sm text-purple-950 focus:outline-none cursor-pointer">
+          <!-- Populated dynamically from state.academicYears e.g. 2569, 2570 -->
+        </select>
+      </div>
+
+      <!-- Archive Year Warning Banner -->
+      <div id="archived-year-banner" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+        <span>🗄️</span> <span id="archived-year-banner-text">คลังประวัติศาสตร์ (ดูย้อนหลัง)</span>
+        <button type="button" onclick="exitArchiveView()" class="ml-1 text-[11px] underline text-amber-800 hover:text-amber-950 cursor-pointer font-bold">กลับปีปัจจุบัน</button>
+      </div>
+
       <!-- Current Semester Display (Auto Active - ไม่มีดรอปดาวน์) -->
       <div class="hidden sm:flex items-center bg-slate-100 border border-slate-200/90 rounded-xl px-2.5 py-1 gap-1.5 shadow-2xs">
         <span class="text-xs text-indigo-700 font-semibold">ภาค:</span>
@@ -1699,6 +1716,30 @@
               </div>
               <p class="text-[11px] text-slate-400">ใช้สำหรับกำกับปีการศึกษาในแบบ ปพ.5 ทุกเล่ม</p>
             </div>
+
+            <!-- Promotion & Academic Year Transition Banner Card -->
+            <div class="col-span-1 md:col-span-2 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border border-purple-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl">🎓</span>
+                  <span class="text-sm font-bold text-slate-900">ระบบสิ้นปีการศึกษา & เลื่อนชั้นเรียนอัจฉริยะ</span>
+                  <span class="text-[10px] font-extrabold text-purple-700 bg-purple-100/90 border border-purple-300 px-2 py-0.5 rounded-full">Smart Roll-over</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed max-w-xl">
+                  เมื่อสิ้นสุดปีการศึกษา สามารถสั่งเลื่อนระดับชั้นนักเรียนอัตโนมัติ (ป.5 ➔ ป.6, ป.4 ➔ ป.5, ป.3 ➔ ป.4 และ ป.6 จบการศึกษา) พร้อมล็อกและสำรองข้อมูล ปพ.5 ของปีนี้เข้าสู่คลังประวัติศาสตร์อย่างปลอดภัย สลับดูย้อนหลังได้ตลอดเวลา
+                </p>
+                <div id="settings-archived-years-list" class="text-[11px] text-purple-800 font-semibold pt-0.5 flex flex-wrap items-center gap-1.5">
+                  <!-- Populated dynamically with available archived years e.g. "คลังย้อนหลัง: 2569" -->
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onclick="openPromotionWizardModal()" 
+                class="touch-target shrink-0 px-5 py-3 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md shadow-purple-600/25 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <span>🎓</span> <span>เริ่มระบบเลื่อนชั้นเรียน</span>
+              </button>
+            </div>
           </div>
 
           <!-- Row 2: Term 1 & Term 2 Dates (Two Balanced Group Cards) -->
@@ -2750,6 +2791,224 @@
         </div>
       </div>
 
+      <!-- ========================================================
+           MODAL 7: SMART PROMOTION & ACADEMIC YEAR WIZARD MODAL
+           ======================================================== -->
+      <div id="promotion-wizard-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-4xl w-full shadow-2xl border border-slate-200/90 flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          
+          <!-- Modal Header -->
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 text-white shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-xs flex items-center justify-center text-xl shadow-inner border border-white/20">
+                🎓
+              </div>
+              <div>
+                <h3 class="text-base sm:text-lg font-bold leading-tight flex items-center gap-2">
+                  <span>ระบบสิ้นปีการศึกษา & เลื่อนชั้นเรียนอัจฉริยะ</span>
+                  <span id="wizard-badge-step" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-400 text-slate-900 shadow-2xs">Smart Roll-over</span>
+                </h3>
+                <p id="promotion-wizard-subtitle" class="text-xs text-purple-200 mt-0.5">
+                  เตรียมส่งต่อนักเรียนสู่ปีการศึกษาใหม่ พร้อมสำรองข้อมูล ปพ.5 ปลอดภัย 100%
+                </p>
+              </div>
+            </div>
+            <button type="button" onclick="closePromotionWizardModal()" class="text-purple-200 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer text-lg">
+              ✕
+            </button>
+          </div>
+
+          <!-- Modal Body (Scrollable) -->
+          <div class="p-5 sm:p-6 overflow-y-auto space-y-6 text-slate-800 flex-1">
+            
+            <!-- Step 1: Visual Promotion Flow Cards -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
+                  <span>1. แผนผังการเลื่อนชั้นเรียนอัตโนมัติ</span>
+                </h4>
+                <span class="text-[11px] text-slate-500 font-medium">คำนวณจากระดับชั้นปัจจุบัน</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <!-- Card ป.6 -> จบการศึกษา -->
+                <div class="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/90 shadow-2xs flex flex-col justify-between">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs font-extrabold text-amber-900">ชั้น ป.6</span>
+                    <span id="wizard-count-p6" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900">7 คน</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs font-bold text-amber-800 mt-1">
+                    <span>➔</span>
+                    <span class="flex items-center gap-1">
+                      <span>🎓</span> <span>จบการศึกษา (ศิษย์เก่า)</span>
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-slate-500 mt-1.5">ย้ายเข้าสู่ทำเนียบศิษย์เก่า ปพ.5 สมบูรณ์</p>
+                </div>
+
+                <!-- Card ป.5 -> ป.6 -->
+                <div class="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200/90 shadow-2xs flex flex-col justify-between">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs font-extrabold text-blue-900">ชั้น ป.5</span>
+                    <span id="wizard-count-p5" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-200 text-blue-900">9 คน</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs font-bold text-blue-800 mt-1">
+                    <span>➔</span>
+                    <span class="flex items-center gap-1">
+                      <span>⬆️</span> <span>เลื่อนขึ้นเป็น ป.6/1</span>
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-slate-500 mt-1.5">ขึ้นเป็นรุ่นพี่ ป.6 ในปีใหม่</p>
+                </div>
+
+                <!-- Card ป.4 -> ป.5 -->
+                <div class="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/90 shadow-2xs flex flex-col justify-between">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs font-extrabold text-emerald-900">ชั้น ป.4</span>
+                    <span id="wizard-count-p4" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200 text-emerald-900">9 คน</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs font-bold text-emerald-800 mt-1">
+                    <span>➔</span>
+                    <span class="flex items-center gap-1">
+                      <span>⬆️</span> <span>เลื่อนขึ้นเป็น ป.5/1</span>
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-slate-500 mt-1.5">เลื่อนระดับชั้นอัตโนมัติ</p>
+                </div>
+
+                <!-- Card ป.3 -> ป.4 -->
+                <div class="p-3.5 rounded-2xl bg-indigo-50/80 border border-indigo-200/90 shadow-2xs flex flex-col justify-between">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs font-extrabold text-indigo-900">ชั้น ป.3</span>
+                    <span id="wizard-count-p3" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-200 text-indigo-900">0 คน</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs font-bold text-indigo-800 mt-1">
+                    <span>➔</span>
+                    <span class="flex items-center gap-1">
+                      <span>⬆️</span> <span>เลื่อนขึ้นเป็น ป.4/1</span>
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-slate-500 mt-1.5">เลื่อนระดับชั้นอัตโนมัติ</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Student Review & Customize Action Table -->
+            <div class="space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
+                  <span>2. ตรวจสอบและปรับเปลี่ยนการเลื่อนชั้นรายบุคคล</span>
+                </h4>
+                
+                <!-- Quick Filter Tabs -->
+                <div class="inline-flex p-1 bg-slate-100 rounded-xl gap-1 text-xs font-semibold" id="wizard-grade-tabs">
+                  <button type="button" onclick="filterWizardReviewTable('ALL')" class="wizard-tab-btn active px-3 py-1 rounded-lg bg-white shadow-2xs text-purple-900">ทั้งหมด</button>
+                  <button type="button" onclick="filterWizardReviewTable('ป.6')" class="wizard-tab-btn px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">ป.6 (จบ)</button>
+                  <button type="button" onclick="filterWizardReviewTable('ป.5')" class="wizard-tab-btn px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">ป.5 ➔ ป.6</button>
+                  <button type="button" onclick="filterWizardReviewTable('ป.4')" class="wizard-tab-btn px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">ป.4 ➔ ป.5</button>
+                  <button type="button" onclick="filterWizardReviewTable('ป.3')" class="wizard-tab-btn px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">ป.3 ➔ ป.4</button>
+                </div>
+              </div>
+
+              <!-- Student Review Table -->
+              <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs max-h-64 overflow-y-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 sticky top-0 z-10 font-bold">
+                    <tr>
+                      <th class="py-2.5 px-3 w-16 text-center">ชั้นเดิม</th>
+                      <th class="py-2.5 px-3 w-16 text-center">เลขที่</th>
+                      <th class="py-2.5 px-3">ชื่อ - นามสกุล</th>
+                      <th class="py-2.5 px-3 w-48">การดำเนินการ</th>
+                      <th class="py-2.5 px-3 w-36 text-center">ชั้นเรียนใหม่</th>
+                    </tr>
+                  </thead>
+                  <tbody id="wizard-review-tbody" class="divide-y divide-slate-100">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+              <p class="text-[11px] text-slate-400">
+                💡 กรณีมีนักเรียนซ้ำชั้น สามารถเปลี่ยนการดำเนินการเป็น <strong>"ซ้ำชั้น (อยู่ชั้นเดิม)"</strong> หรือนักเรียนที่ย้าย สามารถเลือก <strong>"ย้ายสถานศึกษา"</strong> ได้ทันที
+              </p>
+            </div>
+
+            <!-- Step 3: Quick Import Incoming Students (e.g. ป.3 New Batch) -->
+            <div class="border border-purple-100 rounded-2xl p-4 bg-purple-50/30 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                  <span>📥</span> <span>นำเข้ารายชื่อนักเรียนใหม่ (เช่น ชั้น ป.3 ปีใหม่ หรือนักเรียนย้ายเข้า)</span>
+                </span>
+                <span class="text-[11px] text-purple-700 font-medium">ไม่บังคับ (สามารถกรอกภายหลังได้)</span>
+              </div>
+              <textarea 
+                id="wizard-new-students-input" 
+                rows="2" 
+                placeholder="วางรายชื่อนักเรียนใหม่ที่นี่ (1 บรรทัดต่อ 1 คน เช่น ด.ช. สมศักดิ์ มีสุข) ระบบจะเพิ่มเป็นนักเรียนชั้น ป.3 ให้อัตโนมัติ..." 
+                class="w-full p-2.5 text-xs border border-purple-200 rounded-xl bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              ></textarea>
+            </div>
+
+            <!-- Step 4: New Academic Year Settings & Checkbox Options -->
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/70 space-y-3">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800">
+                3. ตัวเลือกการเปิดปีการศึกษาใหม่
+              </h4>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label for="wizard-new-year-input" class="block text-xs font-bold text-slate-700 mb-1">ปีการศึกษาใหม่ที่จะเปิด</label>
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">พ.ศ.</span>
+                    <input 
+                      type="text" 
+                      id="wizard-new-year-input" 
+                      value="2570" 
+                      class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-xl text-sm font-bold text-purple-950 bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div class="space-y-2 pt-1">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="wizard-opt-archive" checked class="w-4 h-4 text-purple-600 rounded-sm focus:ring-purple-500" />
+                    <span class="text-xs font-bold text-slate-800">🗄️ ล็อกและสำรองข้อมูลปีปัจจุบันเข้าคลังประวัติศาสตร์</span>
+                  </label>
+                  <p class="text-[11px] text-slate-500 pl-6">คะแนน ปพ.5 เดิมทั้งหมดจะปลอดภัย 100% เปิดดูย้อนหลังได้ตลอดเวลา</p>
+
+                  <label class="flex items-center gap-2 cursor-pointer pt-1">
+                    <input type="checkbox" id="wizard-opt-clone-sub" checked class="w-4 h-4 text-purple-600 rounded-sm focus:ring-purple-500" />
+                    <span class="text-xs font-bold text-slate-800">📋 คัดลอกชิ้นงานย่อย (Sub-assignments) มาใช้ต่อในปีใหม่</span>
+                  </label>
+                  <p class="text-[11px] text-slate-500 pl-6">ไม่ต้องมานั่งพิมพ์ชื่องานย่อยใหม่ เปิดเทอมพร้อมบันทึกคะแนนทันที</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="px-5 sm:px-6 py-4 border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <span class="text-xs text-slate-500">
+              * ข้อมูลจะถูกบันทึกลงเครื่องและซิงค์ขึ้น Supabase Cloud อัตโนมัติ
+            </span>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="closePromotionWizardModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 cursor-pointer transition-colors">
+                ยกเลิก
+              </button>
+              <button 
+                type="button" 
+                id="wizard-confirm-btn"
+                onclick="executePromotionWizard()" 
+                class="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md shadow-purple-600/25 cursor-pointer transition-all flex items-center gap-2"
+              >
+                <span>🚀</span> <span>ยืนยันการเลื่อนชั้นและเปิดปีการศึกษาใหม่</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -2784,6 +3043,6 @@
   </nav>
 
     <!-- Main JavaScript Controller -->
-  <script src="app.js?v=20261116y"></script>
+  <script src="app.js?v=20261117a"></script>
 </body>
 </html>

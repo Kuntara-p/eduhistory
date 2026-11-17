@@ -442,16 +442,16 @@ const DEFAULT_STUDENTS = [
   { id: 'P61-06', student_no: 6, name: 'ด.ญ. นันทกานต์ สันทวงศ์', grade: 'ป.6', room: '1', gender: 'หญิง', status: 'กำลังศึกษา' },
   { id: 'P61-07', student_no: 7, name: 'ด.ญ. น้อง พม่า', grade: 'ป.6', room: '1', gender: 'หญิง', status: 'กำลังศึกษา' },
 
-  // ป.5 (รวม 9 คน: ชาย 4, หญิง 5 - จากภาพตัวอย่างจริงของผู้ใช้)
+  // ป.5 (รวม 9 คน: ชาย 4, หญิง 5 - บันทึกเวลาเรียนจริง ป.5 เทอม 1)
   { id: 'P51-01', student_no: 1, name: 'ด.ช. กัณฑ์ณภัทร พิบูลย์', grade: 'ป.5', room: '1', gender: 'ชาย' },
-  { id: 'P51-02', student_no: 2, name: 'ด.ช. คชัมฐ์ ศรีวราพร', grade: 'ป.5', room: '1', gender: 'ชาย' },
-  { id: 'P51-03', student_no: 3, name: 'ด.ช. โท ศรีวราพร', grade: 'ป.5', room: '1', gender: 'ชาย' },
-  { id: 'P51-04', student_no: 4, name: 'ด.ช. ชาย ศรีวราพร', grade: 'ป.5', room: '1', gender: 'ชาย' },
+  { id: 'P51-02', student_no: 2, name: 'ด.ช. คริษฐ์ ศรีจราพร', grade: 'ป.5', room: '1', gender: 'ชาย' },
+  { id: 'P51-03', student_no: 3, name: 'ด.ช. โท ศรีจราพร', grade: 'ป.5', room: '1', gender: 'ชาย' },
+  { id: 'P51-04', student_no: 4, name: 'ด.ช. ชาย ศรีจราพร', grade: 'ป.5', room: '1', gender: 'ชาย' },
   { id: 'P51-05', student_no: 5, name: 'ด.ญ. กัญญารัตน์ ชูทับ', grade: 'ป.5', room: '1', gender: 'หญิง' },
   { id: 'P51-06', student_no: 6, name: 'ด.ญ. ธนภรณ์ วงค์สวัสดิ์', grade: 'ป.5', room: '1', gender: 'หญิง' },
   { id: 'P51-07', student_no: 7, name: 'ด.ญ. ปภัสรา นุ่มนวล', grade: 'ป.5', room: '1', gender: 'หญิง' },
-  { id: 'P51-08', student_no: 8, name: 'ด.ญ. ดอกไม้ ศรีวราพร', grade: 'ป.5', room: '1', gender: 'หญิง' },
-  { id: 'P51-09', student_no: 9, name: 'ด.ญ. อลิสา ศรีวราพร', grade: 'ป.5', room: '1', gender: 'หญิง' },
+  { id: 'P51-08', student_no: 8, name: 'ด.ญ. ดอกไม้ ศรีจราพร', grade: 'ป.5', room: '1', gender: 'หญิง' },
+  { id: 'P51-09', student_no: 9, name: 'ด.ญ. อลิสา ศรีจราพร', grade: 'ป.5', room: '1', gender: 'หญิง' },
 
   // ป.4 (รวม 15 คน: ชาย 9, หญิง 6)
   { id: 'P41-01', student_no: 1, name: 'ด.ช. กิตติภพ บุญนาค', grade: 'ป.4', room: '1', gender: 'ชาย' },
@@ -721,6 +721,15 @@ const state = {
   supabaseClient: null,
   isCloudSynced: false,
 
+  // Multi-Year & Promotion Wizard
+  academicYears: ['2569'],
+  yearArchives: {},
+  currentAcademicYear: '2569',
+  isViewingArchive: false,
+  _activeWorkingSnapshot: null,
+  _wizardStudentDecisions: {},
+  _wizardGradeFilter: 'ALL',
+
   indicatorChart: null
 };
 window.state = state;
@@ -925,6 +934,17 @@ function loadData() {
   }
   state.settings.noTeachingDays = [];
 
+  const storedYears = localStorage.getItem('hist_academic_years');
+  state.academicYears = storedYears ? JSON.parse(storedYears) : [state.settings.academicYear || '2569'];
+  if (!state.academicYears.includes(state.settings.academicYear || '2569')) {
+    state.academicYears.push(state.settings.academicYear || '2569');
+  }
+
+  const storedArchives = localStorage.getItem('hist_year_archives');
+  state.yearArchives = storedArchives ? JSON.parse(storedArchives) : {};
+  state.currentAcademicYear = state.settings.academicYear || '2569';
+  state.isViewingArchive = false;
+
   if (!state.classrooms || state.classrooms.length === 0) {
     state.classrooms = [...DEFAULT_CLASSROOMS];
   }
@@ -1008,6 +1028,8 @@ function saveLocalData(skipCloudSync = false) {
   localStorage.setItem('hist_holistic_assessments', JSON.stringify(state.holisticAssessments || {}));
   localStorage.setItem('hist_lesson_logs', JSON.stringify(state.lessonLogs));
   localStorage.setItem('hist_settings', JSON.stringify(state.settings));
+  localStorage.setItem('hist_academic_years', JSON.stringify(state.academicYears || ['2569']));
+  localStorage.setItem('hist_year_archives', JSON.stringify(state.yearArchives || {}));
 
   if (!skipCloudSync && typeof syncToSupabase === 'function') {
     syncToSupabase();
@@ -1036,7 +1058,9 @@ function syncToSupabase(forceNow = false) {
         customUnitWeight: state.customUnitWeight || {},
         holisticAssessments: state.holisticAssessments || {},
         lessonLogs: state.lessonLogs || [],
-        settings: state.settings || {}
+        settings: state.settings || {},
+        academicYears: state.academicYears || ['2569'],
+        yearArchives: state.yearArchives || {}
       };
       const { error } = await state.supabaseClient
         .from(DB_STORE_TABLE)
@@ -1094,7 +1118,9 @@ async function pullFromSupabase() {
       if (cloud.customUnitWeight) state.customUnitWeight = cloud.customUnitWeight;
       if (cloud.holisticAssessments) state.holisticAssessments = cloud.holisticAssessments;
       if (cloud.lessonLogs) state.lessonLogs = cloud.lessonLogs;
-      if (cloud.settings) state.settings = cloud.settings;
+      if (cloud.settings) state.settings = Object.assign({}, DEFAULT_SETTINGS, cloud.settings);
+      if (cloud.academicYears && cloud.academicYears.length > 0) state.academicYears = cloud.academicYears;
+      if (cloud.yearArchives) state.yearArchives = cloud.yearArchives;
       saveLocalData(true);
       if (typeof renderActiveView === 'function') renderActiveView();
       updateSyncStatus(true, 'เชื่อมต่อ Supabase แล้ว (ข้อมูลอัปเดต)');
@@ -1300,11 +1326,11 @@ function calculateStudentUnitScores(studentId, sem) {
 
     if (isComplete) {
       scaledScore = rawMaxTotal > 0 ? (rawScoreTotal / rawMaxTotal) * u.weight : 0;
-      scaledScore = Math.round(scaledScore * 10) / 10;
+      scaledScore = Math.round(scaledScore);
     } else if (enteredCount > 0) {
       isPartial = true;
       scaledScore = rawMaxTotal > 0 ? (rawScoreTotal / rawMaxTotal) * u.weight : 0;
-      scaledScore = Math.round(scaledScore * 10) / 10;
+      scaledScore = Math.round(scaledScore);
     } else {
       scaledScore = 0;
     }
@@ -1325,7 +1351,7 @@ function calculateStudentUnitScores(studentId, sem) {
     };
   });
 
-  grandTotalScaled = Math.round(grandTotalScaled * 10) / 10;
+  grandTotalScaled = Math.round(grandTotalScaled);
   return {
     units: unitResults,
     grandTotalScaled
@@ -1690,6 +1716,7 @@ function switchView(viewName) {
 }
 
 function renderApp() {
+  populateGlobalYearSelector();
   populateGlobalClassroomSelector();
 
   const gradeSel = document.getElementById('class-selector-grade');
@@ -3268,12 +3295,12 @@ function updateGradebookTabButtons() {
 function renderUnitSummaryBadge(uResult) {
   if (!uResult || uResult.totalCount === 0) return '<span class="text-slate-400 text-xs">-</span>';
   if (uResult.isComplete) {
-    return `<span class="inline-flex items-center gap-1 font-bold text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-lg shadow-2xs" title="คะแนนดิบรวม ${uResult.rawScoreTotal}/${uResult.rawMaxTotal} แปลงเป็นคะแนนหน่วย ${uResult.scaledScore.toFixed(1)} / ${uResult.weight}">
-      <span>⭐</span> <span>${uResult.scaledScore.toFixed(1)}</span>
+    return `<span class="inline-flex items-center gap-1 font-bold text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-lg shadow-2xs" title="คะแนนดิบรวม ${uResult.rawScoreTotal}/${uResult.rawMaxTotal} แปลงเป็นคะแนนหน่วย ${uResult.scaledScore} / ${uResult.weight}">
+      <span>⭐</span> <span>${uResult.scaledScore}</span>
     </span>`;
   }
   if (uResult.enteredCount > 0) {
-    return `<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-lg shadow-2xs" title="คะแนนดิบรวม ${uResult.rawScoreTotal}/${uResult.rawMaxTotal} (คำนวณสัดส่วนได้ ${uResult.scaledScore.toFixed(1)}) รอเก็บให้ครบอีก ${uResult.totalCount - uResult.enteredCount} ตัวชี้วัด">
+    return `<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-lg shadow-2xs" title="คะแนนดิบรวม ${uResult.rawScoreTotal}/${uResult.rawMaxTotal} (คำนวณสัดส่วนได้ ${uResult.scaledScore}) รอเก็บให้ครบอีก ${uResult.totalCount - uResult.enteredCount} ตัวชี้วัด">
       <span>รอครบ</span> <span class="text-[10px] text-amber-600">(${uResult.enteredCount}/${uResult.totalCount})</span>
     </span>`;
   }
@@ -3541,7 +3568,7 @@ function renderGradebookView() {
           return indCells + scaledCell;
         }).join('')}
         <td class="py-2.5 px-3 text-center font-bold text-slate-900 bg-amber-50/40 border-r border-slate-200 text-sm" id="total-${student.id}">
-          ${grandTotal.toFixed(1)}
+          ${grandTotal}
         </td>
         <td class="py-2.5 px-3 text-center text-sm font-bold bg-amber-50/70" id="grade-${student.id}">
           <span class="${isGradeZero ? 'grade-zero' : 'text-slate-800'}">
@@ -3588,7 +3615,7 @@ window.updateScore = async function(studentId, indicatorId, value, maxVal) {
 
   const totalEl = document.getElementById(`total-${studentId}`);
   const gradeEl = document.getElementById(`grade-${studentId}`);
-  if (totalEl) totalEl.textContent = calcResult.grandTotalScaled.toFixed(1);
+  if (totalEl) totalEl.textContent = calcResult.grandTotalScaled;
 
   const grade = calculateGrade(calcResult.grandTotalScaled, maxPossible);
   if (gradeEl) gradeEl.innerHTML = `<span class="${grade === '0' ? 'grade-zero' : 'text-slate-800'}">${grade}</span>`;
@@ -5723,9 +5750,9 @@ function renderPP5SummaryView() {
         t1Regular += score;
       }
     });
-    t1Regular = Math.round(t1Regular * 10) / 10;
-    t1Midterm = Math.round(t1Midterm * 10) / 10;
-    const t1Total = Math.round((t1Regular + t1Midterm) * 10) / 10;
+    t1Regular = Math.round(t1Regular);
+    t1Midterm = Math.round(t1Midterm);
+    const t1Total = Math.round(t1Regular + t1Midterm);
     const t1Pct = Math.round((t1Total / 50) * 100);
 
     // Term 2 calculation
@@ -5742,13 +5769,13 @@ function renderPP5SummaryView() {
         t2Regular += score;
       }
     });
-    t2Regular = Math.round(t2Regular * 10) / 10;
-    t2Final = Math.round(t2Final * 10) / 10;
-    const t2Total = Math.round((t2Regular + t2Final) * 10) / 10;
+    t2Regular = Math.round(t2Regular);
+    t2Final = Math.round(t2Final);
+    const t2Total = Math.round(t2Regular + t2Final);
     const t2Pct = Math.round((t2Total / 50) * 100);
 
     // Full Year Total & Grade
-    const grandTotal = Math.round((t1Total + t2Total) * 10) / 10;
+    const grandTotal = Math.round(t1Total + t2Total);
     const grade = calculateGrade(grandTotal, 100);
 
     // Attendance
@@ -6421,7 +6448,7 @@ function renderDashboardView() {
         t2Total += (calcT2.units[uKey] || {}).scaledScore || 0;
       });
 
-      const grandTotal = Math.round((t1Total + t2Total) * 10) / 10;
+      const grandTotal = Math.round(t1Total + t2Total);
       const g = calculateGrade(grandTotal, 100);
       if (gradeCounts[g] !== undefined) gradeCounts[g]++;
     });
@@ -6914,9 +6941,9 @@ window.exportPP5Excel = function() {
       if (u.unitNo === 'midterm' || u.name.includes('กลาง')) t1Midterm += score;
       else t1Regular += score;
     });
-    t1Regular = Math.round(t1Regular * 10) / 10;
-    t1Midterm = Math.round(t1Midterm * 10) / 10;
-    const t1Total = Math.round((t1Regular + t1Midterm) * 10) / 10;
+    t1Regular = Math.round(t1Regular);
+    t1Midterm = Math.round(t1Midterm);
+    const t1Total = Math.round(t1Regular + t1Midterm);
 
     const calcT2 = calculateStudentUnitScores(student.id, '2');
     let t2Regular = 0, t2Final = 0;
@@ -6926,11 +6953,11 @@ window.exportPP5Excel = function() {
       if (u.unitNo === 'final' || u.name.includes('ปลาย')) t2Final += score;
       else t2Regular += score;
     });
-    t2Regular = Math.round(t2Regular * 10) / 10;
-    t2Final = Math.round(t2Final * 10) / 10;
-    const t2Total = Math.round((t2Regular + t2Final) * 10) / 10;
+    t2Regular = Math.round(t2Regular);
+    t2Final = Math.round(t2Final);
+    const t2Total = Math.round(t2Regular + t2Final);
 
-    const grandTotal = Math.round((t1Total + t2Total) * 10) / 10;
+    const grandTotal = Math.round(t1Total + t2Total);
     const grade = calculateGrade(grandTotal, 100);
     const attStats = getStudentAttendanceStats(student.id);
 
@@ -8177,4 +8204,423 @@ window.exportStudentRosterExcel = function() {
   window.XLSX.writeFile(wb, `ทะเบียนนักเรียน_${selectedClass}_${new Date().toISOString().split('T')[0]}.xlsx`);
   showNotification('ดาวน์โหลดไฟล์รายชื่อนักเรียน (Excel) สำเร็จ');
 };
+// ==========================================
+// 14. MULTI-YEAR MANAGEMENT & PROMOTION WIZARD
+// ==========================================
+
+function populateGlobalYearSelector() {
+  const yearSel = document.getElementById('global-year-selector');
+  if (!yearSel) return;
+  const years = state.academicYears && state.academicYears.length > 0 ? state.academicYears : [state.settings.academicYear || '2569'];
+  const activeYear = state.settings.academicYear || '2569';
+  const currentSel = state.currentAcademicYear || activeYear;
+
+  // Sort descending (e.g. 2570, 2569)
+  const sortedYears = Array.from(new Set([...years, activeYear])).sort((a, b) => b.localeCompare(a));
+
+  yearSel.innerHTML = sortedYears.map(y => {
+    const isCurrentActive = y === activeYear;
+    const isSelected = y === currentSel;
+    const label = isCurrentActive ? `ปี ${y} (ปัจจุบัน)` : `ปี ${y} (คลังประวัติศาสตร์)`;
+    return `<option value="${y}" ${isSelected ? 'selected' : ''}>${label}</option>`;
+  }).join('');
+
+  // Update banner if viewing archive
+  const banner = document.getElementById('archived-year-banner');
+  const bannerText = document.getElementById('archived-year-banner-text');
+  if (banner) {
+    if (state.isViewingArchive) {
+      banner.classList.remove('hidden');
+      banner.classList.add('flex');
+      if (bannerText) bannerText.textContent = `คลังประวัติศาสตร์ ปี ${currentSel} (ดูย้อนหลัง)`;
+    } else {
+      banner.classList.add('hidden');
+      banner.classList.remove('flex');
+    }
+  }
+
+  // Update settings page archived years badge if present
+  const archiveListEl = document.getElementById('settings-archived-years-list');
+  if (archiveListEl) {
+    const archiveKeys = Object.keys(state.yearArchives || {});
+    if (archiveKeys.length > 0) {
+      archiveListEl.innerHTML = `<span class="text-purple-600">🗄️ คลังประวัติศาสตร์ที่บันทึกไว้:</span> ` + 
+        archiveKeys.map(y => `<span class="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 font-bold border border-purple-200">ปี ${y}</span>`).join(' ');
+    } else {
+      archiveListEl.innerHTML = `<span class="text-slate-400 font-normal">ยังไม่มีปีการศึกษาในคลังประวัติศาสตร์ (จะสร้างเมื่อสั่งสิ้นปีการศึกษา)</span>`;
+    }
+  }
+}
+
+window.handleGlobalYearChange = function(selectedYear) {
+  const activeYear = state.settings.academicYear || '2569';
+  
+  if (selectedYear === activeYear) {
+    // Switch back to active current year
+    if (state.isViewingArchive && state._activeWorkingSnapshot) {
+      const snap = state._activeWorkingSnapshot;
+      state.classrooms = snap.classrooms;
+      state.students = snap.students;
+      state.attendance = snap.attendance;
+      state.scores = snap.scores;
+      state.subAssignments = snap.subAssignments;
+      state.subScores = snap.subScores;
+      state.customIndicatorMax = snap.customIndicatorMax;
+      state.customUnitWeight = snap.customUnitWeight;
+      state.holisticAssessments = snap.holisticAssessments;
+      state.lessonLogs = snap.lessonLogs;
+      state._activeWorkingSnapshot = null;
+    }
+    state.isViewingArchive = false;
+    state.currentAcademicYear = activeYear;
+    populateGlobalYearSelector();
+    renderApp();
+    showNotification(`กลับสู่ปีการศึกษาปัจจุบัน (${activeYear}) เรียบร้อยครับ`);
+  } else {
+    // Switch to an archived year
+    const archive = state.yearArchives && state.yearArchives[selectedYear];
+    if (!archive) {
+      showNotification(`ไม่พบข้อมูลคลังประวัติศาสตร์ของปีการศึกษา ${selectedYear}`, 'error');
+      populateGlobalYearSelector();
+      return;
+    }
+
+    // Stash active snapshot before loading archive if not already stashed
+    if (!state.isViewingArchive) {
+      state._activeWorkingSnapshot = {
+        classrooms: JSON.parse(JSON.stringify(state.classrooms)),
+        students: JSON.parse(JSON.stringify(state.students)),
+        attendance: JSON.parse(JSON.stringify(state.attendance)),
+        scores: JSON.parse(JSON.stringify(state.scores)),
+        subAssignments: JSON.parse(JSON.stringify(state.subAssignments)),
+        subScores: JSON.parse(JSON.stringify(state.subScores)),
+        customIndicatorMax: JSON.parse(JSON.stringify(state.customIndicatorMax)),
+        customUnitWeight: JSON.parse(JSON.stringify(state.customUnitWeight)),
+        holisticAssessments: JSON.parse(JSON.stringify(state.holisticAssessments)),
+        lessonLogs: JSON.parse(JSON.stringify(state.lessonLogs))
+      };
+    }
+
+    // Load archive data into state for viewing/exporting
+    state.classrooms = JSON.parse(JSON.stringify(archive.classrooms || DEFAULT_CLASSROOMS));
+    state.students = JSON.parse(JSON.stringify(archive.students || []));
+    state.attendance = JSON.parse(JSON.stringify(archive.attendance || {}));
+    state.scores = JSON.parse(JSON.stringify(archive.scores || {}));
+    state.subAssignments = JSON.parse(JSON.stringify(archive.subAssignments || {}));
+    state.subScores = JSON.parse(JSON.stringify(archive.subScores || {}));
+    state.customIndicatorMax = JSON.parse(JSON.stringify(archive.customIndicatorMax || {}));
+    state.customUnitWeight = JSON.parse(JSON.stringify(archive.customUnitWeight || {}));
+    state.holisticAssessments = JSON.parse(JSON.stringify(archive.holisticAssessments || {}));
+    state.lessonLogs = JSON.parse(JSON.stringify(archive.lessonLogs || []));
+
+    state.isViewingArchive = true;
+    state.currentAcademicYear = selectedYear;
+
+    populateGlobalYearSelector();
+    renderApp();
+    showNotification(`เปิดดูข้อมูลคลังประวัติศาสตร์ ปีการศึกษา ${selectedYear} เรียบร้อย (โหมดดูย้อนหลัง & พิมพ์ ปพ.5)`);
+  }
+};
+
+window.exitArchiveView = function() {
+  const activeYear = state.settings.academicYear || '2569';
+  window.handleGlobalYearChange(activeYear);
+};
+
+// Wizard Dialog Control
+window.openPromotionWizardModal = function() {
+  if (state.isViewingArchive) {
+    showNotification('กรุณากลับสู่ปีการศึกษาปัจจุบันก่อนดำเนินการเลื่อนชั้นเรียนครับ', 'error');
+    return;
+  }
+
+  const modal = document.getElementById('promotion-wizard-modal');
+  if (!modal) return;
+
+  const currentYear = state.settings.academicYear || '2569';
+  const targetYear = String(parseInt(currentYear, 10) + 1);
+
+  const subTitleEl = document.getElementById('promotion-wizard-subtitle');
+  if (subTitleEl) {
+    subTitleEl.textContent = `เตรียมส่งต่อนักเรียนจากปีการศึกษา ${currentYear} ➔ ${targetYear} พร้อมสำรองข้อมูล ปพ.5 ปลอดภัย 100%`;
+  }
+
+  const newYearInp = document.getElementById('wizard-new-year-input');
+  if (newYearInp) newYearInp.value = targetYear;
+
+  // Initialize decisions map
+  state._wizardStudentDecisions = {};
+  state._wizardGradeFilter = 'ALL';
+
+  // Count active students per grade
+  const allStudents = state.students || [];
+  const p6Count = allStudents.filter(s => s.grade === 'ป.6' && s.status !== 'ย้ายออก').length;
+  const p5Count = allStudents.filter(s => s.grade === 'ป.5' && s.status !== 'ย้ายออก').length;
+  const p4Count = allStudents.filter(s => s.grade === 'ป.4' && s.status !== 'ย้ายออก').length;
+  const p3Count = allStudents.filter(s => s.grade === 'ป.3' && s.status !== 'ย้ายออก').length;
+
+  const c6 = document.getElementById('wizard-count-p6');
+  if (c6) c6.textContent = `${p6Count} คน`;
+  const c5 = document.getElementById('wizard-count-p5');
+  if (c5) c5.textContent = `${p5Count} คน`;
+  const c4 = document.getElementById('wizard-count-p4');
+  if (c4) c4.textContent = `${p4Count} คน`;
+  const c3 = document.getElementById('wizard-count-p3');
+  if (c3) c3.textContent = `${p3Count} คน`;
+
+  // Default decisions
+  allStudents.forEach(s => {
+    if (s.status === 'ย้ายออก') {
+      state._wizardStudentDecisions[s.id] = 'transfer';
+    } else if (s.grade === 'ป.6') {
+      state._wizardStudentDecisions[s.id] = 'graduate';
+    } else {
+      state._wizardStudentDecisions[s.id] = 'promote';
+    }
+  });
+
+  renderWizardReviewTable();
+  modal.classList.remove('hidden');
+};
+
+window.closePromotionWizardModal = function() {
+  const modal = document.getElementById('promotion-wizard-modal');
+  if (modal) modal.classList.add('hidden');
+};
+
+window.filterWizardReviewTable = function(grade) {
+  state._wizardGradeFilter = grade;
+  const tabs = document.querySelectorAll('#wizard-grade-tabs .wizard-tab-btn');
+  tabs.forEach(btn => {
+    if ((grade === 'ALL' && btn.textContent.includes('ทั้งหมด')) || btn.textContent.includes(grade)) {
+      btn.className = 'wizard-tab-btn active px-3 py-1 rounded-lg bg-white shadow-2xs text-purple-900 font-bold';
+    } else {
+      btn.className = 'wizard-tab-btn px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-medium';
+    }
+  });
+  renderWizardReviewTable();
+};
+
+window.handleWizardDecisionChange = function(studentId, decision) {
+  state._wizardStudentDecisions[studentId] = decision;
+  renderWizardReviewTable();
+};
+
+function renderWizardReviewTable() {
+  const tbody = document.getElementById('wizard-review-tbody');
+  if (!tbody) return;
+
+  const filter = state._wizardGradeFilter || 'ALL';
+  const allStudents = state.students || [];
+
+  let list = allStudents.filter(s => {
+    if (filter === 'ALL') return true;
+    return s.grade === filter;
+  });
+
+  // Sort by grade descending (ป.6 down to ป.3), then student_no
+  list.sort((a, b) => {
+    if (a.grade !== b.grade) return b.grade.localeCompare(a.grade);
+    return (a.student_no || 0) - (b.student_no || 0);
+  });
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">ไม่พบรายชื่อในระดับชั้นนี้</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(s => {
+    const decision = state._wizardStudentDecisions[s.id] || (s.grade === 'ป.6' ? 'graduate' : 'promote');
+
+    let targetGradeText = '';
+    let targetClassBadge = '';
+
+    if (decision === 'graduate') {
+      targetGradeText = '🎓 จบการศึกษา (ศิษย์เก่า)';
+      targetClassBadge = 'bg-amber-100 text-amber-800 border-amber-200';
+    } else if (decision === 'transfer') {
+      targetGradeText = 'ย้ายออก / พ้นสภาพ';
+      targetClassBadge = 'bg-rose-100 text-rose-700 border-rose-200';
+    } else if (decision === 'repeat') {
+      targetGradeText = `ซ้ำชั้น (${s.grade}/1 เดิม)`;
+      targetClassBadge = 'bg-slate-100 text-slate-700 border-slate-200';
+    } else { // promote
+      if (s.grade === 'ป.5') targetGradeText = '⬆️ ป.6/1 (ห้องหลัก)';
+      else if (s.grade === 'ป.4') targetGradeText = '⬆️ ป.5/1 (ห้องหลัก)';
+      else if (s.grade === 'ป.3') targetGradeText = '⬆️ ป.4/1 (ห้องหลัก)';
+      else targetGradeText = 'จบการศึกษา';
+      targetClassBadge = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+    }
+
+    return `
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="py-2 px-3 text-center font-bold text-slate-700">${s.grade}</td>
+        <td class="py-2 px-3 text-center text-slate-600 font-medium">${s.student_no || '-'}</td>
+        <td class="py-2 px-3 font-semibold text-slate-900">${s.name}</td>
+        <td class="py-2 px-3">
+          <select 
+            onchange="handleWizardDecisionChange('${s.id}', this.value)" 
+            class="w-full py-1 px-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white"
+          >
+            <option value="promote" ${decision === 'promote' ? 'selected' : ''}>⬆️ เลื่อนชั้นเรียน (แนะนำ)</option>
+            <option value="graduate" ${decision === 'graduate' ? 'selected' : ''}>🎓 จบการศึกษา</option>
+            <option value="repeat" ${decision === 'repeat' ? 'selected' : ''}>🔁 ซ้ำชั้น (อยู่ชั้นเดิม)</option>
+            <option value="transfer" ${decision === 'transfer' ? 'selected' : ''}>ย้ายสถานศึกษา / ลาออก</option>
+          </select>
+        </td>
+        <td class="py-2 px-3 text-center">
+          <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${targetClassBadge}">
+            ${targetGradeText}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function shiftDateYear(dateStr, years = 1) {
+  if (!dateStr) return '';
+  const parts = String(dateStr).split('-');
+  if (parts.length === 3) {
+    const newY = parseInt(parts[0], 10) + years;
+    return `${newY}-${parts[1]}-${parts[2]}`;
+  }
+  return dateStr;
+}
+
+window.executePromotionWizard = async function() {
+  const currentYear = state.settings.academicYear || '2569';
+  const targetYearInp = document.getElementById('wizard-new-year-input');
+  const targetYear = (targetYearInp && targetYearInp.value.trim()) || String(parseInt(currentYear, 10) + 1);
+
+  const shouldArchive = document.getElementById('wizard-opt-archive')?.checked ?? true;
+  const shouldCloneSub = document.getElementById('wizard-opt-clone-sub')?.checked ?? true;
+  const newStudentsText = document.getElementById('wizard-new-students-input')?.value || '';
+
+  const confirmMsg = `ยืนยันการสิ้นสุดปีการศึกษา ${currentYear} และเลื่อนชั้นเรียนสู่ปีการศึกษา ${targetYear} หรือไม่?\n\n- ข้อมูล ปพ.5 ปี ${currentYear} จะถูกบันทึกเข้าคลังประวัติศาสตร์\n- นักเรียน ป.5 จะเลื่อนขึ้นเป็น ป.6, ป.4 ➔ ป.5, ป.3 ➔ ป.4\n- นักเรียน ป.6 เดิมจะจบการศึกษา\n- คะแนนและเวลาเรียนของปีใหม่จะเริ่มต้นรอบใหม่`;
+  if (!confirm(confirmMsg)) return;
+
+  const btn = document.getElementById('wizard-confirm-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span>⏳</span> <span>กำลังดำเนินการเลื่อนชั้นเรียน...</span>`;
+  }
+
+  try {
+    // 1. Archive Current Year Data
+    if (shouldArchive) {
+      if (!state.yearArchives) state.yearArchives = {};
+      state.yearArchives[currentYear] = {
+        academicYear: currentYear,
+        archivedAt: new Date().toISOString(),
+        classrooms: JSON.parse(JSON.stringify(state.classrooms)),
+        students: JSON.parse(JSON.stringify(state.students)),
+        attendance: JSON.parse(JSON.stringify(state.attendance)),
+        scores: JSON.parse(JSON.stringify(state.scores)),
+        subAssignments: JSON.parse(JSON.stringify(state.subAssignments || {})),
+        subScores: JSON.parse(JSON.stringify(state.subScores || {})),
+        customIndicatorMax: JSON.parse(JSON.stringify(state.customIndicatorMax || {})),
+        customUnitWeight: JSON.parse(JSON.stringify(state.customUnitWeight || {})),
+        holisticAssessments: JSON.parse(JSON.stringify(state.holisticAssessments || {})),
+        lessonLogs: JSON.parse(JSON.stringify(state.lessonLogs || [])),
+        settings: JSON.parse(JSON.stringify(state.settings || {}))
+      };
+    }
+
+    // 2. Add years
+    if (!state.academicYears) state.academicYears = [currentYear];
+    if (!state.academicYears.includes(currentYear)) state.academicYears.push(currentYear);
+    if (!state.academicYears.includes(targetYear)) state.academicYears.push(targetYear);
+
+    // 3. Process Student Promotion
+    const decisions = state._wizardStudentDecisions || {};
+    const updatedStudents = [];
+
+    (state.students || []).forEach(s => {
+      const dec = decisions[s.id] || (s.grade === 'ป.6' ? 'graduate' : 'promote');
+      if (dec === 'graduate') {
+        updatedStudents.push({ ...s, status: 'จบการศึกษา' });
+      } else if (dec === 'transfer') {
+        updatedStudents.push({ ...s, status: 'ย้ายออก' });
+      } else if (dec === 'repeat') {
+        updatedStudents.push({ ...s, status: 'กำลังศึกษา' });
+      } else { // promote
+        let nextGrade = s.grade;
+        if (s.grade === 'ป.5') nextGrade = 'ป.6';
+        else if (s.grade === 'ป.4') nextGrade = 'ป.5';
+        else if (s.grade === 'ป.3') nextGrade = 'ป.4';
+        updatedStudents.push({ ...s, grade: nextGrade, room: '1', status: 'กำลังศึกษา' });
+      }
+    });
+
+    // Parse incoming students (e.g. ป.3 new batch)
+    if (newStudentsText.trim()) {
+      const lines = newStudentsText.split('\n').map(l => l.trim()).filter(Boolean);
+      lines.forEach((name, idx) => {
+        updatedStudents.push({
+          id: `TEMP-P3-${idx + 1}`,
+          student_no: idx + 1,
+          name: name,
+          grade: 'ป.3',
+          room: '1',
+          gender: detectGenderFromName(name),
+          status: 'กำลังศึกษา'
+        });
+      });
+    }
+
+    // Re-index student_no and clean IDs per grade for active students
+    ['ป.6', 'ป.5', 'ป.4', 'ป.3'].forEach(g => {
+      const activeInGrade = updatedStudents.filter(s => s.grade === g && s.status === 'กำลังศึกษา');
+      activeInGrade.forEach((s, idx) => {
+        s.student_no = idx + 1;
+        const gradeDigit = g.replace(/[^0-9]/g, '');
+        s.id = `P${gradeDigit}1-${String(s.student_no).padStart(2, '0')}`;
+      });
+    });
+
+    state.students = updatedStudents;
+
+    // 4. Reset scores and attendance for new year
+    state.scores = {};
+    state.attendance = {};
+    state.subScores = {};
+    state.holisticAssessments = {};
+    state.lessonLogs = [];
+
+    // Clone or reset sub-assignments
+    if (!shouldCloneSub) {
+      state.subAssignments = {};
+    }
+
+    // 5. Update settings to new year & shift term dates by 1 year
+    state.settings.academicYear = targetYear;
+    state.currentAcademicYear = targetYear;
+    state.isViewingArchive = false;
+
+    if (state.settings.term1Start) state.settings.term1Start = shiftDateYear(state.settings.term1Start, 1);
+    if (state.settings.term1End) state.settings.term1End = shiftDateYear(state.settings.term1End, 1);
+    if (state.settings.term2Start) state.settings.term2Start = shiftDateYear(state.settings.term2Start, 1);
+    if (state.settings.term2End) state.settings.term2End = shiftDateYear(state.settings.term2End, 1);
+
+    // Save locally and sync to Supabase Cloud
+    saveLocalData();
+    syncToSupabase(true);
+
+    closePromotionWizardModal();
+    populateGlobalYearSelector();
+    renderApp();
+
+    showNotification(`🎉 สิ้นปีการศึกษาและเลื่อนชั้นเรียนสำเร็จ! ยินดีต้อนรับสู่ปีการศึกษา ${targetYear}`);
+  } catch (err) {
+    console.error('Promotion error:', err);
+    showNotification('เกิดข้อผิดพลาดในการเลื่อนชั้นเรียน: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<span>🚀</span> <span>ยืนยันการเลื่อนชั้นและเปิดปีการศึกษาใหม่</span>`;
+    }
+  }
+};
+
 document.addEventListener('DOMContentLoaded', initApp);
