@@ -3254,17 +3254,32 @@ function renderUnitSummaryBadge(uResult) {
   return '<span class="text-slate-400 text-xs">-</span>';
 }
 
+function isExamUnit(u) {
+  return Boolean(u && (u.unitNo === 'midterm' || u.unitNo === 'final' || (u.name && (u.name.includes('สอบกลาง') || u.name.includes('สอบปลาย')))));
+}
+
+function isExamIndicator(ind) {
+  return Boolean(ind && (ind.type === 'สอบวัดผล' || ind.id === 'สอบกลางปี' || ind.id === 'สอบปลายปี'));
+}
+
 function renderGradebookView() {
   updateGradebookTabButtons();
   const students = getFilteredStudents();
   const currentSemesterFilter = state.gradebookSemester || 'all';
+  const isAllYear = currentSemesterFilter === 'all';
   const units = getActiveUnitsForSemester(currentSemesterFilter);
   const maxPossible = units.reduce((acc, u) => acc + (u.weight || 0), 0);
+
+  const regularUnits = units.filter(u => !isExamUnit(u));
+  const examUnits = units.filter(u => isExamUnit(u));
+  const showUnitSumCol = !isAllYear && regularUnits.length > 0 && examUnits.length > 0;
+  const regularWeightSum = regularUnits.reduce((acc, u) => acc + (u.weight || 0), 0);
+  const orderedUnits = showUnitSumCol ? [...regularUnits, ...examUnits] : units;
 
   const activeStudents = students.filter(s => s.status !== 'ย้ายออก');
   const gradebookClassBadge = document.getElementById('gradebook-class-badge');
   if (gradebookClassBadge) {
-    const termBadgeText = currentSemesterFilter === 'all' 
+    const termBadgeText = isAllYear 
       ? `ทั้งปีการศึกษา (เต็ม ${maxPossible})` 
       : `ภาคเรียนที่ ${currentSemesterFilter} (เต็ม ${maxPossible})`;
     gradebookClassBadge.textContent = `ห้อง ${state.currentGrade} • ${termBadgeText} (${activeStudents.length} คน)`;
@@ -3273,8 +3288,48 @@ function renderGradebookView() {
   const unitRowEl = document.getElementById('gradebook-unit-row');
   const headerRowEl = document.getElementById('gradebook-header-row');
 
+  const renderUnitTh = (u) => {
+    const uKey = String(u.unitNo !== undefined ? u.unitNo : u.name);
+    const uIndicators = u.indicators || [];
+    const hasScaledCol = (uIndicators.length > 1) || (uIndicators.length === 1 && uIndicators[0].max !== u.weight);
+    const colspan = uIndicators.length + (hasScaledCol ? 1 : 0);
+    return `
+      <th colspan="${colspan}" class="th-hover-reveal group py-1.5 px-2.5 text-center text-xs font-bold text-slate-800 bg-slate-100 border-b border-r border-slate-300">
+        <div class="flex items-center justify-center gap-1.5 flex-wrap">
+          <span class="font-bold text-slate-900">${u.name}</span>
+          <button 
+            type="button"
+            onclick="openEditUnitWeightModal('${uKey}')" 
+            title="คลิกเพื่อแก้ไขน้ำหนักคะแนนของหน่วยนี้ (ตาม ปพ.5)"
+            class="text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 px-1.5 py-0.5 rounded border border-blue-200 inline-flex items-center gap-1 transition-all cursor-pointer"
+          >
+            <span>น้ำหนัก ${u.weight} คะแนน</span>
+            <span class="btn-edit-reveal text-[10px] text-blue-600">✏️</span>
+          </button>
+        </div>
+      </th>
+    `;
+  };
+
   if (unitRowEl && headerRowEl) {
-    // Row 1: Group by Units
+    // Row 1: Group by Units (with optional "รวมหน่วย" column matching ปพ.5)
+    const unitSumTh = showUnitSumCol ? `
+      <th rowspan="2" class="py-2.5 px-3 text-center text-xs font-bold text-blue-900 bg-blue-50/90 border-b border-r border-blue-200 min-w-[95px]">
+        รวมหน่วย<br><span class="text-[11px] font-semibold text-blue-700">(${regularWeightSum})</span>
+      </th>
+    ` : '';
+
+    const unitsHeaderHtml = showUnitSumCol
+      ? `${regularUnits.map(renderUnitTh).join('')}${unitSumTh}${examUnits.map(renderUnitTh).join('')}`
+      : orderedUnits.map(renderUnitTh).join('');
+
+    const totalHeaderLabel = isAllYear ? `รวม (${maxPossible})` : `รวมภาคเรียนที่ ${currentSemesterFilter} (${maxPossible})`;
+    const gradeThHtml = isAllYear ? `
+      <th rowspan="2" class="py-2.5 px-3 text-center text-xs font-bold text-amber-900 bg-amber-100/70 border-b border-slate-300 min-w-[80px]">
+        เกรด
+      </th>
+    ` : '';
+
     unitRowEl.innerHTML = `
       <th rowspan="2" class="col-sticky-1 py-2.5 px-3 text-center text-xs font-bold text-slate-700 bg-slate-100 border-b border-r border-slate-300 w-14">
         เลขที่
@@ -3282,47 +3337,36 @@ function renderGradebookView() {
       <th rowspan="2" class="col-sticky-2 py-2.5 px-4 text-left text-xs font-bold text-slate-700 bg-slate-100 border-b border-r border-slate-300 min-w-[170px]">
         ชื่อ - สกุล
       </th>
-      ${units.map(u => {
-        const uKey = String(u.unitNo !== undefined ? u.unitNo : u.name);
-        const uIndicators = u.indicators || [];
-        const hasScaledCol = (uIndicators.length > 1) || (uIndicators.length === 1 && uIndicators[0].max !== u.weight);
-        const colspan = uIndicators.length + (hasScaledCol ? 1 : 0);
-        return `
-          <th colspan="${colspan}" class="th-hover-reveal group py-1.5 px-2.5 text-center text-xs font-bold text-slate-800 bg-slate-100 border-b border-r border-slate-300">
-            <div class="flex items-center justify-center gap-1.5 flex-wrap">
-              <span class="font-bold text-slate-900">${u.name}</span>
-              <button 
-                type="button"
-                onclick="openEditUnitWeightModal('${uKey}')" 
-                title="คลิกเพื่อแก้ไขน้ำหนักคะแนนของหน่วยนี้ (ตาม ปพ.5)"
-                class="text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 px-1.5 py-0.5 rounded border border-blue-200 inline-flex items-center gap-1 transition-all cursor-pointer"
-              >
-                <span>น้ำหนัก ${u.weight} คะแนน</span>
-                <span class="btn-edit-reveal text-[10px] text-blue-600">✏️</span>
-              </button>
-            </div>
-          </th>
-        `;
-      }).join('')}
-      <th rowspan="2" class="py-2.5 px-3 text-center text-xs font-bold text-amber-900 bg-amber-50 border-b border-r border-slate-300 min-w-[95px]">
-        รวม (${maxPossible})
+      ${unitsHeaderHtml}
+      <th rowspan="2" class="py-2.5 px-3 text-center text-xs font-bold text-amber-900 bg-amber-50 border-b ${isAllYear ? 'border-r border-slate-300' : ''} min-w-[100px]">
+        ${totalHeaderLabel}
       </th>
-      <th rowspan="2" class="py-2.5 px-3 text-center text-xs font-bold text-amber-900 bg-amber-100/70 border-b border-slate-300 min-w-[80px]">
-        เกรด
-      </th>
+      ${gradeThHtml}
     `;
 
-    // Row 2: Indicators + Unit Scaled Summary
-    headerRowEl.innerHTML = units.map(u => {
+    // Row 2: Indicators + Unit Scaled Summary (no sub-assignments on exam indicators)
+    headerRowEl.innerHTML = orderedUnits.map(u => {
       const uIndicators = u.indicators || [];
       const hasScaledCol = (uIndicators.length > 1) || (uIndicators.length === 1 && uIndicators[0].max !== u.weight);
       const indCols = uIndicators.map(ind => {
-        const subs = getSubAssignments(ind.id);
+        const isExam = isExamIndicator(ind) || isExamUnit(u);
+        const subs = isExam ? [] : getSubAssignments(ind.id);
         const subCount = subs.length;
         const subBtnText = subCount > 0 ? `📋 งานย่อย (${subCount})` : `📋 + งานย่อย`;
         const subBtnClass = subCount > 0 
           ? 'text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 border-blue-200' 
           : 'text-slate-600 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 border-slate-200';
+
+        const subBtnHtml = isExam ? '' : `
+          <button 
+            type="button"
+            onclick="openSubAssignmentsModal('${ind.id}')" 
+            title="จัดการชิ้นงาน/การบ้านย่อยในตัวชี้วัดนี้ (${subCount} ชิ้นงาน)"
+            class="text-[9px] font-bold px-1.5 py-0.5 rounded border inline-flex items-center gap-1 transition-all cursor-pointer ${subBtnClass}"
+          >
+            <span>${subBtnText}</span>
+          </button>
+        `;
 
         return `
         <th class="th-hover-reveal group py-2 px-2.5 text-center text-xs font-bold text-slate-700 bg-slate-50 border-b border-r border-slate-200 min-w-[135px]">
@@ -3339,14 +3383,7 @@ function renderGradebookView() {
               <span>เต็ม ${ind.max}</span>
               <span class="btn-edit-reveal text-[9px] text-amber-700">✏️</span>
             </button>
-            <button 
-              type="button"
-              onclick="openSubAssignmentsModal('${ind.id}')" 
-              title="จัดการชิ้นงาน/การบ้านย่อยในตัวชี้วัดนี้ (${subCount} ชิ้นงาน)"
-              class="text-[9px] font-bold px-1.5 py-0.5 rounded border inline-flex items-center gap-1 transition-all cursor-pointer ${subBtnClass}"
-            >
-              <span>${subBtnText}</span>
-            </button>
+            ${subBtnHtml}
           </div>
         </th>
       `;
@@ -3374,39 +3411,49 @@ function renderGradebookView() {
   tbody.innerHTML = students.map(student => {
     const isTransferred = student.status === 'ย้ายออก';
 
+    const renderTransferredUnitCells = (u) => {
+      const uIndicators = u.indicators || [];
+      const hasScaledCol = (uIndicators.length > 1) || (uIndicators.length === 1 && uIndicators[0].max !== u.weight);
+      const indCells = uIndicators.map(() => `
+        <td class="py-2 px-2 text-center border-r border-slate-100 bg-slate-50/50">
+          <span class="text-xs text-slate-400 font-medium cursor-not-allowed" title="ย้ายออก (ไม่ประเมินคะแนน)">-</span>
+        </td>
+      `).join('');
+      const scaledCell = hasScaledCol ? `
+        <td class="py-2 px-2 text-center border-r border-slate-100 bg-slate-50/50">
+          <span class="text-xs text-slate-400 font-medium">-</span>
+        </td>
+      ` : '';
+      return indCells + scaledCell;
+    };
+
     if (isTransferred) {
+      const unitSumEmptyCell = showUnitSumCol ? `
+        <td class="py-2.5 px-3 text-center font-bold text-slate-400 bg-slate-50/50 border-r border-slate-200 text-sm">-</td>
+      ` : '';
+      const unitsEmptyHtml = showUnitSumCol
+        ? `${regularUnits.map(renderTransferredUnitCells).join('')}${unitSumEmptyCell}${examUnits.map(renderTransferredUnitCells).join('')}`
+        : orderedUnits.map(renderTransferredUnitCells).join('');
+      const gradeEmptyCell = isAllYear ? `
+        <td class="py-2.5 px-3 text-center font-bold text-slate-400 bg-slate-50 text-sm" id="grade-${student.id}">-</td>
+      ` : '';
+
       return `
         <tr class="border-b border-slate-100 bg-slate-50/40 opacity-75">
           <td class="col-sticky-1 py-2.5 px-3 font-semibold text-slate-700 text-center bg-white border-r border-slate-200 text-sm">
             ${student.student_no}
           </td>
           <td class="col-sticky-2 py-2.5 px-4 font-medium text-slate-900 bg-white border-r border-slate-200 text-sm">
-            <div class="flex items-center gap-1.5 truncate max-w-[160px]">
-              <span class="line-through text-slate-500 truncate">${student.name}</span>
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+              <span class="line-through text-slate-500 truncate max-w-[115px]" title="${student.name}">${student.name}</span>
               <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold border border-slate-300 shrink-0">ย้ายออก</span>
             </div>
           </td>
-          ${units.map(u => {
-            const uIndicators = u.indicators || [];
-            const hasScaledCol = (uIndicators.length > 1) || (uIndicators.length === 1 && uIndicators[0].max !== u.weight);
-            const indCells = uIndicators.map(() => `
-              <td class="py-2 px-2 text-center border-r border-slate-100 bg-slate-50/50">
-                <span class="text-xs text-slate-400 font-medium cursor-not-allowed" title="ย้ายออก (ไม่ประเมินคะแนน)">-</span>
-              </td>
-            `).join('');
-            const scaledCell = hasScaledCol ? `
-              <td class="py-2 px-2 text-center border-r border-slate-100 bg-slate-50/50">
-                <span class="text-xs text-slate-400 font-medium">-</span>
-              </td>
-            ` : '';
-            return indCells + scaledCell;
-          }).join('')}
-          <td class="py-2.5 px-3 text-center font-bold text-slate-400 bg-slate-50 border-r border-slate-200 text-sm" id="total-${student.id}">
+          ${unitsEmptyHtml}
+          <td class="py-2.5 px-3 text-center font-bold text-slate-400 bg-slate-50 ${isAllYear ? 'border-r border-slate-200' : ''} text-sm" id="total-${student.id}">
             -
           </td>
-          <td class="py-2.5 px-3 text-center text-xs font-semibold text-slate-500 bg-slate-50" id="grade-${student.id}">
-            <span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-300">ย้ายออก</span>
-          </td>
+          ${gradeEmptyCell}
         </tr>
       `;
     }
@@ -3414,8 +3461,119 @@ function renderGradebookView() {
     const studentScores = state.scores[student.id] || {};
     const calcResult = calculateStudentUnitScores(student.id, currentSemesterFilter);
     const grandTotal = calcResult.grandTotalScaled;
+    const regularUnitSum = regularUnits.reduce((acc, u) => {
+      const uKey = String(u.unitNo !== undefined ? u.unitNo : u.name);
+      return acc + (calcResult.units[uKey]?.scaledScore || 0);
+    }, 0);
     const grade = calculateGrade(grandTotal, maxPossible);
     const isGradeZero = grade === '0';
+
+    const renderActiveUnitCells = (u) => {
+      const uKey = String(u.unitNo !== undefined ? u.unitNo : u.name);
+      const uResult = calcResult.units[uKey];
+      const uIndicators = u.indicators || [];
+      const hasScaledCol = (uIndicators.length > 1) || (uIndicators.length === 1 && uIndicators[0].max !== u.weight);
+
+      const indCells = uIndicators.map(ind => {
+        const scoreVal = studentScores[ind.id] !== undefined ? studentScores[ind.id] : '';
+        const isExam = isExamIndicator(ind) || isExamUnit(u);
+        const subs = isExam ? [] : getSubAssignments(ind.id);
+        const hasSubs = subs.length > 0;
+        
+        // Check student's pending sub assignments
+        let pendingSubCount = 0;
+        if (hasSubs) {
+          subs.forEach(s => {
+            const sc = getSubScore(student.id, ind.id, s.id);
+            if (sc === '' || sc === null || sc === undefined) pendingSubCount++;
+          });
+        }
+
+        if (hasSubs) {
+          // Scaled from sub assignments
+          const isPending = pendingSubCount > 0;
+          return `
+          <td class="py-2 px-2 text-center border-r border-slate-100 ${isPending ? 'bg-amber-50/40' : ''}">
+            <div class="flex flex-col items-center gap-0.5">
+              <div class="relative">
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="${ind.max}" 
+                  step="0.5"
+                  value="${scoreVal}"
+                  placeholder="0"
+                  readonly
+                  onclick="openSubAssignmentsModal('${ind.id}')"
+                  title="คะแนนคำนวณจากงานย่อย ${subs.length} ชิ้น (คลิกเพื่อแก้ไขคะแนนงานย่อย)"
+                  class="touch-target w-20 text-center font-bold py-1 px-1.5 border rounded-lg text-sm transition-all cursor-pointer ${isPending ? 'border-amber-300 bg-amber-50 text-amber-900 focus:ring-2 focus:ring-amber-400' : 'border-blue-200 bg-blue-50/60 text-blue-900 focus:ring-2 focus:ring-blue-400'}"
+                />
+              </div>
+              ${isPending ? `
+                <button 
+                  type="button" 
+                  onclick="openSubAssignmentsModal('${ind.id}')"
+                  class="text-[9px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-1 py-0.2 rounded border border-rose-200 inline-flex items-center gap-0.5 transition cursor-pointer"
+                  title="ค้างส่ง ${pendingSubCount} งาน (คลิกเพื่อบันทึกงานย่อย)"
+                >
+                  <span>⚠️ ค้าง ${pendingSubCount} งาน</span>
+                </button>
+              ` : `
+                <button 
+                  type="button" 
+                  onclick="openSubAssignmentsModal('${ind.id}')"
+                  class="text-[9px] font-semibold text-slate-500 hover:text-blue-700 hover:underline cursor-pointer"
+                  title="คลิกเพื่อดูงานย่อย ${subs.length} ชิ้น"
+                >
+                  (จาก ${subs.length} งาน)
+                </button>
+              `}
+            </div>
+          </td>
+          `;
+        }
+
+        // Normal indicator input without sub assignments
+        return `
+          <td class="py-2 px-2 text-center border-r border-slate-100">
+            <input 
+              type="number" 
+              min="0" 
+              max="${ind.max}" 
+              step="0.5"
+              value="${scoreVal}"
+              placeholder="0"
+              onchange="updateScore('${student.id}', '${ind.id}', this.value, ${ind.max})"
+              class="touch-target w-20 text-center font-medium py-1 px-1.5 border rounded-lg text-sm transition-all focus:ring-2 focus:ring-amber-400 focus:outline-none ${Number(scoreVal) > ind.max ? 'border-red-400 bg-red-50 text-red-600' : 'border-slate-200 bg-white text-slate-800'}"
+            />
+          </td>
+        `;
+      }).join('');
+
+      const scaledCell = hasScaledCol ? `
+        <td class="py-2 px-2 text-center border-r border-slate-200 bg-indigo-50/30" id="unit-scaled-${uKey}-${student.id}">
+          ${renderUnitSummaryBadge(uResult)}
+        </td>
+      ` : '';
+
+      return indCells + scaledCell;
+    };
+
+    const unitSumActiveCell = showUnitSumCol ? `
+      <td class="py-2.5 px-3 text-center font-bold text-blue-900 bg-blue-50/40 border-r border-blue-200 text-sm" id="unit-sum-${student.id}">
+        ${regularUnitSum}
+      </td>
+    ` : '';
+    const unitsActiveHtml = showUnitSumCol
+      ? `${regularUnits.map(renderActiveUnitCells).join('')}${unitSumActiveCell}${examUnits.map(renderActiveUnitCells).join('')}`
+      : orderedUnits.map(renderActiveUnitCells).join('');
+    const gradeActiveCell = isAllYear ? `
+      <td class="py-2.5 px-3 text-center text-sm font-bold bg-amber-50/70" id="grade-${student.id}">
+        <span class="${isGradeZero ? 'grade-zero' : 'text-slate-800'}">
+          ${grade}
+        </span>
+      </td>
+    ` : '';
 
     return `
       <tr class="border-b border-slate-100 hover:bg-slate-50/70 transition-colors">
@@ -3425,103 +3583,11 @@ function renderGradebookView() {
         <td class="col-sticky-2 py-2.5 px-4 font-medium text-slate-900 bg-white border-r border-slate-200 text-sm">
           <div class="truncate max-w-[160px]">${student.name}</div>
         </td>
-        ${units.map(u => {
-          const uKey = String(u.unitNo !== undefined ? u.unitNo : u.name);
-          const uResult = calcResult.units[uKey];
-          const uIndicators = u.indicators || [];
-          const hasScaledCol = (uIndicators.length > 1) || (uIndicators.length === 1 && uIndicators[0].max !== u.weight);
-
-          const indCells = uIndicators.map(ind => {
-            const scoreVal = studentScores[ind.id] !== undefined ? studentScores[ind.id] : '';
-            const subs = getSubAssignments(ind.id);
-            const hasSubs = subs.length > 0;
-            
-            // Check student's pending sub assignments
-            let pendingSubCount = 0;
-            if (hasSubs) {
-              subs.forEach(s => {
-                const sc = getSubScore(student.id, ind.id, s.id);
-                if (sc === '' || sc === null || sc === undefined) pendingSubCount++;
-              });
-            }
-
-            if (hasSubs) {
-              // Scaled from sub assignments
-              const isPending = pendingSubCount > 0;
-              return `
-              <td class="py-2 px-2 text-center border-r border-slate-100 ${isPending ? 'bg-amber-50/40' : ''}">
-                <div class="flex flex-col items-center gap-0.5">
-                  <div class="relative">
-                    <input 
-                      type="number" 
-                      min="0" 
-                      max="${ind.max}" 
-                      step="0.5"
-                      value="${scoreVal}"
-                      placeholder="0"
-                      readonly
-                      onclick="openSubAssignmentsModal('${ind.id}')"
-                      title="คะแนนคำนวณจากงานย่อย ${subs.length} ชิ้น (คลิกเพื่อแก้ไขคะแนนงานย่อย)"
-                      class="touch-target w-20 text-center font-bold py-1 px-1.5 border rounded-lg text-sm transition-all cursor-pointer ${isPending ? 'border-amber-300 bg-amber-50 text-amber-900 focus:ring-2 focus:ring-amber-400' : 'border-blue-200 bg-blue-50/60 text-blue-900 focus:ring-2 focus:ring-blue-400'}"
-                    />
-                  </div>
-                  ${isPending ? `
-                    <button 
-                      type="button" 
-                      onclick="openSubAssignmentsModal('${ind.id}')"
-                      class="text-[9px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-1 py-0.2 rounded border border-rose-200 inline-flex items-center gap-0.5 transition cursor-pointer"
-                      title="ค้างส่ง ${pendingSubCount} งาน (คลิกเพื่อบันทึกงานย่อย)"
-                    >
-                      <span>⚠️ ค้าง ${pendingSubCount} งาน</span>
-                    </button>
-                  ` : `
-                    <button 
-                      type="button" 
-                      onclick="openSubAssignmentsModal('${ind.id}')"
-                      class="text-[9px] font-semibold text-slate-500 hover:text-blue-700 hover:underline cursor-pointer"
-                      title="คลิกเพื่อดูงานย่อย ${subs.length} ชิ้น"
-                    >
-                      (จาก ${subs.length} งาน)
-                    </button>
-                  `}
-                </div>
-              </td>
-              `;
-            }
-
-            // Normal indicator input without sub assignments
-            return `
-              <td class="py-2 px-2 text-center border-r border-slate-100">
-                <input 
-                  type="number" 
-                  min="0" 
-                  max="${ind.max}" 
-                  step="0.5"
-                  value="${scoreVal}"
-                  placeholder="0"
-                  onchange="updateScore('${student.id}', '${ind.id}', this.value, ${ind.max})"
-                  class="touch-target w-20 text-center font-medium py-1 px-1.5 border rounded-lg text-sm transition-all focus:ring-2 focus:ring-amber-400 focus:outline-none ${Number(scoreVal) > ind.max ? 'border-red-400 bg-red-50 text-red-600' : 'border-slate-200 bg-white text-slate-800'}"
-                />
-              </td>
-            `;
-          }).join('');
-
-          const scaledCell = hasScaledCol ? `
-            <td class="py-2 px-2 text-center border-r border-slate-200 bg-indigo-50/30" id="unit-scaled-${uKey}-${student.id}">
-              ${renderUnitSummaryBadge(uResult)}
-            </td>
-          ` : '';
-
-          return indCells + scaledCell;
-        }).join('')}
-        <td class="py-2.5 px-3 text-center font-bold text-slate-900 bg-amber-50/40 border-r border-slate-200 text-sm" id="total-${student.id}">
+        ${unitsActiveHtml}
+        <td class="py-2.5 px-3 text-center font-bold text-slate-900 bg-amber-50/40 ${isAllYear ? 'border-r border-slate-200' : ''} text-sm" id="total-${student.id}">
           ${grandTotal}
         </td>
-        <td class="py-2.5 px-3 text-center text-sm font-bold bg-amber-50/70" id="grade-${student.id}">
-          <span class="${isGradeZero ? 'grade-zero' : 'text-slate-800'}">
-            ${grade}
-          </span>
-        </td>
+        ${gradeActiveCell}
       </tr>
     `;
   }).join('');
@@ -3560,12 +3626,23 @@ window.updateScore = async function(studentId, indicatorId, value, maxVal) {
     }
   });
 
+  const unitSumEl = document.getElementById(`unit-sum-${studentId}`);
+  if (unitSumEl) {
+    const regularUnitSum = units.filter(u => !isExamUnit(u)).reduce((acc, u) => {
+      const uKey = String(u.unitNo !== undefined ? u.unitNo : u.name);
+      return acc + (calcResult.units[uKey]?.scaledScore || 0);
+    }, 0);
+    unitSumEl.textContent = regularUnitSum;
+  }
+
   const totalEl = document.getElementById(`total-${studentId}`);
   const gradeEl = document.getElementById(`grade-${studentId}`);
   if (totalEl) totalEl.textContent = calcResult.grandTotalScaled;
 
-  const grade = calculateGrade(calcResult.grandTotalScaled, maxPossible);
-  if (gradeEl) gradeEl.innerHTML = `<span class="${grade === '0' ? 'grade-zero' : 'text-slate-800'}">${grade}</span>`;
+  if (gradeEl) {
+    const grade = calculateGrade(calcResult.grandTotalScaled, maxPossible);
+    gradeEl.innerHTML = `<span class="${grade === '0' ? 'grade-zero' : 'text-slate-800'}">${grade}</span>`;
+  }
 };
 // ------------------------------------------
 // Indicator Max Score Modal Handlers
