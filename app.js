@@ -391,6 +391,8 @@ const DEFAULT_SETTINGS = {
   teacherName: 'ครูกุลธรา บุญมาก',
   currentSemesterSetting: '1',
   academicYear: '2569',
+  targetStudentPct: 70,
+  targetScorePct: 70,
   term1Start: '2026-05-18',
   term1End: '2026-10-12',
   term2Start: '2026-11-02',
@@ -671,6 +673,7 @@ const state = {
   _wizardStudentDecisions: {},
   _wizardGradeFilter: 'ALL',
 
+  dashboardTargetScope: 'measured',
   indicatorChart: null
 };
 window.state = state;
@@ -6446,36 +6449,41 @@ function renderDashboardView() {
     }
   }
 
-  // 11. Right Column Chart 2: การกระจายระดับผลการเรียน (Chart.js Bar)
+  // 11. School Target KPI Section (เป้าหมายสถานศึกษา: นักเรียน >= X% ได้คะแนน >= Y%)
+  const targetStats = calculateSchoolTargetStats(activeStudents, state.dashboardTargetScope || 'measured');
+  renderDashboardSchoolTargetSection(targetStats);
+
+  // 12. Right Column Chart 2: การกระจายระดับผลการเรียน (Chart.js Bar)
   const gradeCanvas = document.getElementById('dashGradeDistChartCanvas');
   if (gradeCanvas && window.Chart) {
     if (state.dashGradeChart) state.dashGradeChart.destroy();
 
-    const t1Units = getActiveUnitsForSemester('1');
-    const t2Units = getActiveUnitsForSemester('2');
-
     const gradeCounts = { '4': 0, '3.5': 0, '3': 0, '2.5': 0, '2': 0, '1.5': 0, '1': 0, '0': 0 };
-    activeStudents.forEach(st => {
-      // Calculate Term 1 Total
-      const calcT1 = calculateStudentUnitScores(st.id, '1');
-      let t1Total = 0;
-      t1Units.forEach(u => {
-        const uKey = String(u.unitNo !== undefined ? u.unitNo : u.name);
-        t1Total += (calcT1.units[uKey] || {}).scaledScore || 0;
-      });
+    const evalMax = targetStats.maxScore > 0 ? targetStats.maxScore : 100;
 
-      // Calculate Term 2 Total
-      const calcT2 = calculateStudentUnitScores(st.id, '2');
-      let t2Total = 0;
-      t2Units.forEach(u => {
-        const uKey = String(u.unitNo !== undefined ? u.unitNo : u.name);
-        t2Total += (calcT2.units[uKey] || {}).scaledScore || 0;
-      });
-
-      const grandTotal = Math.round(t1Total + t2Total);
-      const g = calculateGrade(grandTotal, 100);
+    targetStats.students.forEach(item => {
+      const g = calculateGrade(item.score, evalMax);
       if (gradeCounts[g] !== undefined) gradeCounts[g]++;
     });
+
+    const gradeBadge = document.getElementById('dash-grade-target-badge');
+    if (gradeBadge) {
+      if (!targetStats.hasAnyScore || targetStats.totalStudents === 0) {
+        gradeBadge.textContent = 'ยังไม่มีคะแนนในระบบ';
+        gradeBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200';
+      } else {
+        const badgeCls = targetStats.isTargetMet
+          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+          : 'bg-amber-50 text-amber-800 border-amber-200';
+        gradeBadge.textContent = `กลุ่ม ≥ ${targetStats.targetScorePct}%: ${targetStats.passedCount}/${targetStats.totalStudents} คน (${targetStats.achievedStudentPct}%)`;
+        gradeBadge.className = `px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${badgeCls}`;
+      }
+    }
+
+    const gradeNote = document.getElementById('dash-grade-dist-note');
+    if (gradeNote) {
+      gradeNote.textContent = `คำนวณจาก${targetStats.scopeLabel} (คะแนนเต็ม ${evalMax} คะแนน) • เกณฑ์เป้าหมายโรงเรียน ≥ ${targetStats.targetScorePct}% (เกรด 3.0 ขึ้นไป)`;
+    }
 
     const gradeLabels = ['เกรด 4', 'เกรด 3.5', 'เกรด 3', 'เกรด 2.5', 'เกรด 2', 'เกรด 1.5', 'เกรด 1', 'เกรด 0'];
     const gradeData = ['4', '3.5', '3', '2.5', '2', '1.5', '1', '0'].map(k => gradeCounts[k]);
@@ -6488,14 +6496,14 @@ function renderDashboardView() {
           label: 'จำนวนนักเรียน (คน)',
           data: gradeData,
           backgroundColor: [
-            'rgba(16, 185, 129, 0.85)',
-            'rgba(52, 211, 153, 0.85)',
-            'rgba(59, 130, 246, 0.85)',
-            'rgba(96, 165, 250, 0.85)',
-            'rgba(245, 158, 11, 0.85)',
-            'rgba(251, 191, 36, 0.85)',
-            'rgba(249, 115, 22, 0.85)',
-            'rgba(239, 68, 68, 0.85)'
+            'rgba(16, 185, 129, 0.90)',
+            'rgba(5, 150, 105, 0.85)',
+            'rgba(37, 99, 235, 0.85)',
+            'rgba(96, 165, 250, 0.75)',
+            'rgba(245, 158, 11, 0.75)',
+            'rgba(251, 191, 36, 0.75)',
+            'rgba(249, 115, 22, 0.75)',
+            'rgba(239, 68, 68, 0.80)'
           ],
           borderRadius: 6
         }]
@@ -6530,6 +6538,270 @@ function renderDashboardView() {
   }
 }
 
+window.setDashboardTargetScope = function(scope) {
+  state.dashboardTargetScope = scope;
+  renderDashboardView();
+};
+
+function calculateSchoolTargetStats(activeStudents, scope = 'measured') {
+  const s = state.settings || DEFAULT_SETTINGS;
+  const targetStudentPct = Math.min(100, Math.max(1, Number(s.targetStudentPct) || 70));
+  const targetScorePct = Math.min(100, Math.max(1, Number(s.targetScorePct) || 70));
+
+  const allUnits = getActiveUnitsForSemester('all');
+  let evaluatedUnits = [];
+  let scopeLabel = 'คะแนนที่วัดผลแล้วในระบบ';
+
+  if (scope === '1') {
+    evaluatedUnits = getActiveUnitsForSemester('1');
+    scopeLabel = 'ภาคเรียนที่ 1';
+  } else if (scope === '2') {
+    evaluatedUnits = getActiveUnitsForSemester('2');
+    scopeLabel = 'ภาคเรียนที่ 2';
+  } else if (scope === 'all') {
+    evaluatedUnits = allUnits;
+    scopeLabel = 'ตลอดทั้งปีการศึกษา';
+  } else {
+    // 'measured': only units that have at least one recorded score across active students
+    evaluatedUnits = allUnits.filter(u => {
+      const inds = u.indicators || [];
+      return inds.some(ind => activeStudents.some(st => {
+        const val = state.scores[st.id] && state.scores[st.id][ind.id];
+        return val !== undefined && val !== '' && val !== null;
+      }));
+    });
+    if (evaluatedUnits.length === 0) {
+      evaluatedUnits = getActiveUnitsForSemester(state.currentSemester || '1');
+      scopeLabel = 'คะแนนที่วัดผลแล้ว (ยังไม่มีคะแนน)';
+    } else {
+      scopeLabel = 'คะแนนที่วัดผลแล้วในระบบ';
+    }
+  }
+
+  const maxScore = evaluatedUnits.reduce((acc, u) => acc + (u.weight || 0), 0);
+  const minRequiredScore = (targetScorePct / 100) * maxScore;
+  const nearThresholdPct = Math.max(0, targetScorePct - 10);
+
+  let hasAnyScore = false;
+  const studentItems = [];
+  const passedList = [];
+  const nearList = [];
+  const belowList = [];
+
+  activeStudents.forEach(st => {
+    const calcAll = calculateStudentUnitScores(st.id, 'all');
+    let score = 0;
+    let studentHasData = false;
+    evaluatedUnits.forEach(u => {
+      const uKey = String(u.unitNo !== undefined ? u.unitNo : u.name);
+      const uRes = calcAll.units[uKey];
+      if (uRes) {
+        score += (uRes.scaledScore || 0);
+        if (uRes.enteredCount > 0) {
+          studentHasData = true;
+          hasAnyScore = true;
+        }
+      }
+    });
+
+    const pct = maxScore > 0 ? Math.round((score / maxScore) * 1000) / 10 : 0;
+    const pointsNeeded = Math.max(0, Math.ceil(minRequiredScore - score));
+    const item = { student: st, score, maxScore, pct, pointsNeeded, hasData: studentHasData };
+    studentItems.push(item);
+
+    if (pct >= targetScorePct) {
+      passedList.push(item);
+    } else if (pct >= nearThresholdPct) {
+      nearList.push(item);
+    } else {
+      belowList.push(item);
+    }
+  });
+
+  nearList.sort((a, b) => b.pct - a.pct);
+  passedList.sort((a, b) => b.pct - a.pct);
+  belowList.sort((a, b) => b.pct - a.pct);
+
+  const totalStudents = activeStudents.length;
+  const passedCount = passedList.length;
+  const achievedStudentPct = totalStudents > 0 ? Math.round((passedCount / totalStudents) * 1000) / 10 : 0;
+  const targetMinStudents = Math.ceil((targetStudentPct / 100) * totalStudents);
+  const studentsNeeded = Math.max(0, targetMinStudents - passedCount);
+  const isTargetMet = totalStudents > 0 && hasAnyScore && achievedStudentPct >= targetStudentPct;
+
+  return {
+    scope,
+    scopeLabel,
+    targetStudentPct,
+    targetScorePct,
+    nearThresholdPct,
+    maxScore,
+    minRequiredScore: Math.round(minRequiredScore * 10) / 10,
+    totalStudents,
+    passedCount,
+    achievedStudentPct,
+    studentsNeeded,
+    isTargetMet,
+    hasAnyScore,
+    students: studentItems,
+    passedList,
+    nearList,
+    belowList
+  };
+}
+
+function renderDashboardSchoolTargetSection(stats) {
+  const container = document.getElementById('dash-school-target-section');
+  if (!container) return;
+
+  const scopes = [
+    { key: 'measured', label: 'ที่วัดผลแล้ว (ปัจจุบัน)' },
+    { key: '1', label: 'เทอม 1 (50)' },
+    { key: '2', label: 'เทอม 2 (50)' },
+    { key: 'all', label: 'ทั้งปี (100)' }
+  ];
+
+  const barWidth = Math.min(100, Math.max(0, stats.achievedStudentPct));
+  let statusBadgeHtml = '';
+  let barColorClass = 'bg-blue-500';
+  let cardBorderClass = 'border-slate-200/90';
+
+  if (!stats.hasAnyScore || stats.totalStudents === 0) {
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">⏳ รอการบันทึกคะแนนในช่วงนี้</span>`;
+    barColorClass = 'bg-slate-300';
+  } else if (stats.isTargetMet) {
+    const diff = Math.round((stats.achievedStudentPct - stats.targetStudentPct) * 10) / 10;
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">✅ บรรลุเป้าหมายสถานศึกษาแล้ว${diff > 0 ? ` (+${diff}%)` : ''}</span>`;
+    barColorClass = 'bg-gradient-to-r from-emerald-500 to-teal-500';
+    cardBorderClass = 'border-emerald-200';
+  } else {
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">🎯 กำลังเร่งพัฒนา (ต้องช่วยอีก ${stats.studentsNeeded} คน เพื่อถึงเป้า ${stats.targetStudentPct}%)</span>`;
+    barColorClass = 'bg-gradient-to-r from-amber-500 to-orange-500';
+    cardBorderClass = 'border-amber-200';
+  }
+
+  container.className = `bg-white rounded-3xl p-5 sm:p-6 border ${cardBorderClass} shadow-xs space-y-4`;
+
+  const nearChipsHtml = stats.nearList.length > 0
+    ? stats.nearList.map(item => `
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200" title="คะแนน ${item.score}/${item.maxScore}">
+          <span>${item.student.name}</span>
+          <span class="text-amber-700 font-bold">(${item.pct}% • ขาด ${item.pointsNeeded} คะแนน)</span>
+        </span>
+      `).join('')
+    : `<span class="text-xs text-slate-400">ไม่มีนักเรียนในกลุ่มนี้</span>`;
+
+  const passedChipsHtml = stats.passedList.length > 0
+    ? stats.passedList.map(item => `
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200" title="คะแนน ${item.score}/${item.maxScore}">
+          <span>${item.student.name}</span>
+          <span class="text-emerald-700 font-bold">(${item.pct}%)</span>
+        </span>
+      `).join('')
+    : `<span class="text-xs text-slate-400">ยังไม่มีนักเรียนที่ผ่านเกณฑ์ในขอบเขตนี้</span>`;
+
+  const belowHtml = stats.belowList.length > 0 ? `
+    <div class="pt-2 border-t border-slate-100">
+      <div class="text-[11px] font-bold text-rose-700 mb-1.5 flex items-center gap-1.5">
+        <span>🔴 กลุ่มควรเสริมพิเศษ (&lt; ${stats.nearThresholdPct}%) — ${stats.belowList.length} คน:</span>
+      </div>
+      <div class="flex flex-wrap gap-1.5">
+        ${stats.belowList.map(item => `
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-medium bg-rose-50 text-rose-800 border border-rose-200">
+            <span>${item.student.name}</span>
+            <span class="font-bold">(${item.pct}%)</span>
+          </span>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  container.innerHTML = `
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+      <div class="flex items-start sm:items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl shrink-0">🎯</div>
+        <div>
+          <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+            เป้าหมายสถานศึกษา (SAR): นักเรียนร้อยละ ${stats.targetStudentPct} ได้คะแนนร้อยละ ${stats.targetScorePct} ขึ้นไป
+          </h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">
+            เกณฑ์อ้างอิงจาก${stats.scopeLabel} (คะแนนเต็ม ${stats.maxScore} คะแนน ➔ ต้องได้ ≥ ${stats.minRequiredScore} คะแนน)
+          </p>
+        </div>
+      </div>
+
+      <!-- Scope Switcher Pills -->
+      <div class="inline-flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 self-start md:self-center">
+        ${scopes.map(sc => {
+          const active = stats.scope === sc.key;
+          return `
+            <button 
+              type="button" 
+              onclick="setDashboardTargetScope('${sc.key}')"
+              class="px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${active ? 'bg-white text-blue-700 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-medium'}"
+            >${sc.label}</button>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Main KPI Metric + Progress Bar with Target Marker -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+      <div class="lg:col-span-4 flex items-baseline gap-2.5 flex-wrap">
+        <span class="text-3xl sm:text-4xl font-extrabold ${stats.isTargetMet ? 'text-emerald-600' : (stats.hasAnyScore ? 'text-amber-600' : 'text-slate-400')}">
+          ${stats.hasAnyScore ? `${stats.achievedStudentPct}%` : '-%'}
+        </span>
+        <span class="text-xs sm:text-sm font-semibold text-slate-600">
+          (${stats.passedCount} / ${stats.totalStudents} คน)
+        </span>
+        <div class="w-full mt-1">${statusBadgeHtml}</div>
+      </div>
+
+      <div class="lg:col-span-8 space-y-2 pt-3 lg:pt-0">
+        <div class="flex justify-between text-[11px] font-semibold text-slate-500">
+          <span>0%</span>
+          <span class="text-rose-600 font-bold">เส้นเป้าหมายสถานศึกษา: ${stats.targetStudentPct}%</span>
+          <span>100%</span>
+        </div>
+        <div class="relative w-full h-4 bg-slate-100 rounded-full border border-slate-200/80 overflow-visible">
+          <div class="h-full rounded-full transition-all duration-500 ${barColorClass}" style="width: ${barWidth}%"></div>
+          <!-- Vertical Target Marker -->
+          <div 
+            class="absolute -top-1.5 -bottom-1.5 w-0.5 bg-rose-600 z-10 pointer-events-none" 
+            style="left: ${stats.targetStudentPct}%"
+            title="เป้าหมาย ${stats.targetStudentPct}%"
+          >
+            <div class="w-2.5 h-2.5 rounded-full bg-rose-600 border-2 border-white shadow -ml-1 -mt-1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Student Lists Breakdown (Passed + Near Target) -->
+    ${stats.hasAnyScore ? `
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2 border-t border-slate-100">
+        <div class="space-y-1.5">
+          <div class="text-[11px] font-bold text-emerald-700 flex items-center gap-1.5">
+            <span>🟢 ผ่านเกณฑ์ ≥ ${stats.targetScorePct}% (${stats.passedCount} คน):</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            ${passedChipsHtml}
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <div class="text-[11px] font-bold text-amber-800 flex items-center gap-1.5">
+            <span>🟡 กลุ่มลุ้นใกล้ถึงเป้า (${stats.nearThresholdPct}–${stats.targetScorePct - 1}%) (${stats.nearList.length} คน):</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            ${nearChipsHtml}
+          </div>
+        </div>
+      </div>
+      ${belowHtml}
+    ` : ''}
+  `;
+}
+
 // ------------------------------------------
 // View 5: Settings (⚙️ ตั้งค่าข้อมูลทั่วไปและระบบ)
 // ------------------------------------------
@@ -6557,6 +6829,11 @@ function renderSettingsView() {
   document.getElementById('set-term1-end').value = s.term1End || '';
   document.getElementById('set-term2-start').value = s.term2Start || '';
   document.getElementById('set-term2-end').value = s.term2End || '';
+
+  const tStuEl = document.getElementById('set-target-student-pct');
+  const tScoEl = document.getElementById('set-target-score-pct');
+  if (tStuEl) tStuEl.value = s.targetStudentPct !== undefined ? s.targetStudentPct : 70;
+  if (tScoEl) tScoEl.value = s.targetScorePct !== undefined ? s.targetScorePct : 70;
 
   // Update auto semester indicator badge and banner
   updateAutoSemesterUI();
@@ -6738,6 +7015,11 @@ window.saveGeneralSettings = function() {
   state.settings.term1End = document.getElementById('set-term1-end').value;
   state.settings.term2Start = document.getElementById('set-term2-start').value;
   state.settings.term2End = document.getElementById('set-term2-end').value;
+
+  const tStuEl = document.getElementById('set-target-student-pct');
+  const tScoEl = document.getElementById('set-target-score-pct');
+  if (tStuEl) state.settings.targetStudentPct = Math.min(100, Math.max(1, Number(tStuEl.value) || 70));
+  if (tScoEl) state.settings.targetScorePct = Math.min(100, Math.max(1, Number(tScoEl.value) || 70));
 
   // Recalculate auto-semester immediately with the new dates
   applyAutoSemester(false);

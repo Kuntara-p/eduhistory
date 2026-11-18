@@ -412,6 +412,11 @@
           </div>
         </div>
 
+        <!-- School Target KPI Banner (เป้าหมายผลสัมฤทธิ์ทางการเรียน SAR) -->
+        <div id="dash-school-target-section" class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-4">
+          <!-- Rendered dynamically by renderDashboardView() -->
+        </div>
+
         <!-- Quick Action Hub (ทางด่วนงานสอนประจำวัน) -->
         <div class="bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-slate-50 p-5 sm:p-6 rounded-3xl border border-blue-100 shadow-2xs">
           <div class="flex items-center justify-between mb-3.5">
@@ -496,16 +501,18 @@
 
             <!-- Chart 2: การกระจายระดับผลการเรียน (ตัดเกรด 0 - 4) -->
             <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs">
-              <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-3 border-b border-slate-100 pb-2.5">
                 <h3 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
                   <span>🎓</span> การกระจายระดับผลการเรียน (เกรด 0 - 4)
                 </h3>
-                <span class="text-[11px] text-slate-400">คะแนนเก็บ + สอบ</span>
+                <span id="dash-grade-target-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  คะแนนเก็บ + สอบ
+                </span>
               </div>
               <div class="relative h-56 sm:h-60 w-full">
                 <canvas id="dashGradeDistChartCanvas"></canvas>
               </div>
-              <p class="text-[11px] text-slate-400 text-center mt-2">
+              <p id="dash-grade-dist-note" class="text-[11px] text-slate-400 text-center mt-2">
                 คำนวณจากคะแนนที่บันทึกแล้วในระบบตามเกณฑ์มาตรฐาน สพฐ. (เกรด 1.0 - 4.0)
               </p>
             </div>
@@ -1811,6 +1818,47 @@
 
           </div>
 
+          <!-- Target KPI Settings (เป้าหมายผลสัมฤทธิ์ทางการเรียนของสถานศึกษา) -->
+          <div class="bg-amber-50/60 border border-amber-200/90 rounded-2xl p-4 sm:p-5 space-y-3.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-base font-bold shrink-0">🎯</span>
+              <div>
+                <h4 class="text-xs sm:text-sm font-bold text-amber-950">ตั้งค่าเป้าหมายผลสัมฤทธิ์ทางการเรียน (KPI สถานศึกษา / SAR)</h4>
+                <p class="text-[11px] text-amber-800/80">กำหนดเกณฑ์ร้อยละเพื่อใช้แสดงผลและติดตามกลุ่มเป้าหมายบนหน้าแดชบอร์ด</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="set-target-student-pct" class="block text-xs font-semibold text-slate-700 mb-1">ร้อยละเป้าหมายจำนวนนักเรียนที่ผ่านเกณฑ์ (%)</label>
+                <div class="relative">
+                  <input 
+                    type="number" 
+                    id="set-target-student-pct" 
+                    min="1" 
+                    max="100" 
+                    value="70"
+                    class="touch-target w-full px-3.5 py-2 pr-10 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-2xs"
+                  />
+                  <span class="absolute inset-y-0 right-3 flex items-center text-xs font-bold text-slate-400 pointer-events-none">%</span>
+                </div>
+              </div>
+              <div>
+                <label for="set-target-score-pct" class="block text-xs font-semibold text-slate-700 mb-1">เกณฑ์คะแนนร้อยละขั้นต่ำที่ต้องการ (%)</label>
+                <div class="relative">
+                  <input 
+                    type="number" 
+                    id="set-target-score-pct" 
+                    min="1" 
+                    max="100" 
+                    value="70"
+                    class="touch-target w-full px-3.5 py-2 pr-10 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-2xs"
+                  />
+                  <span class="absolute inset-y-0 right-3 flex items-center text-xs font-bold text-slate-400 pointer-events-none">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Save Button Bar -->
           <div class="flex justify-end pt-3 border-t border-slate-100">
             <button onclick="saveGeneralSettings()" class="touch-target px-6 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 transition-all flex items-center gap-2">
@@ -3043,6 +3091,6 @@
   </nav>
 
     <!-- Main JavaScript Controller -->
-  <script src="app.js?v=20261117e"></script>
+  <script src="app.js?v=20261118a"></script>
 </body>
 </html>
