@@ -1098,15 +1098,29 @@ function updateSyncStatus(connected, text) {
   const dot = document.getElementById('sync-status-dot');
   const label = document.getElementById('sync-status-label');
 
+  const shortText = !connected
+    ? 'ออฟไลน์'
+    : (text && text.includes('กำลัง') ? 'กำลังซิงค์...' : 'Cloud ✓');
+
   if (badge && dot && label) {
-    label.textContent = text;
+    label.textContent = shortText;
+    badge.title = text || shortText;
     if (connected) {
       dot.className = 'w-2 h-2 rounded-full bg-emerald-500 pulse-subtle';
-      badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
+      badge.className = 'hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
     } else {
       dot.className = 'w-2 h-2 rounded-full bg-amber-500';
-      badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200';
+      badge.className = 'hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200';
     }
+  }
+
+  const settingsCloudText = document.getElementById('settings-cloud-sync-text');
+  const settingsCloudBadge = document.getElementById('settings-cloud-sync-badge');
+  if (settingsCloudText && settingsCloudBadge) {
+    settingsCloudText.textContent = text || shortText;
+    settingsCloudBadge.className = connected
+      ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs self-start sm:self-center'
+      : 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs self-start sm:self-center';
   }
 }
 
@@ -6204,16 +6218,16 @@ function renderDashboardView() {
     }
   }
 
-  // 3. KPI Card 1: นักเรียนในห้อง
+  // 3. KPI Card 1: นักเรียนในห้อง (นับเฉพาะกำลังศึกษา + แยกย้ายออก)
   const totalStudentsEl = document.getElementById('dash-stat-students-total');
   const detailStudentsEl = document.getElementById('dash-stat-students-detail');
-  if (totalStudentsEl) totalStudentsEl.textContent = allStudents.length;
+  if (totalStudentsEl) totalStudentsEl.textContent = activeStudents.length;
   if (detailStudentsEl) {
     const maleCount = activeStudents.filter(st => st.gender === 'ชาย').length;
     const femaleCount = activeStudents.filter(st => st.gender === 'หญิง').length;
     const transferredCount = allStudents.filter(st => st.status === 'ย้ายออก').length;
     detailStudentsEl.innerHTML = `
-      <span>ปกติ ${activeStudents.length} คน (ชาย ${maleCount}, หญิง ${femaleCount})</span>
+      <span>ชาย ${maleCount} / หญิง ${femaleCount}</span>
       ${transferredCount > 0 ? `<span class="text-slate-400">• ย้ายออก ${transferredCount}</span>` : ''}
     `;
   }
@@ -6248,13 +6262,13 @@ function renderDashboardView() {
   }
   if (attDetailEl) {
     if (atRiskStudents.length > 0) {
-      attDetailEl.innerHTML = `<span class="text-rose-600 font-semibold">⚠️ เสี่ยง มส. ${atRiskStudents.length} คน (< 80%)</span>`;
+      attDetailEl.innerHTML = `<span class="text-rose-600 font-semibold">⚠️ เสี่ยง มส. ${atRiskStudents.length} คน</span>`;
     } else {
-      attDetailEl.innerHTML = `<span class="text-emerald-700">✅ เวลาเรียนผ่านเกณฑ์ 80% ทุกคน</span>`;
+      attDetailEl.innerHTML = `<span class="text-emerald-700">✅ ผ่านเกณฑ์ 80%</span>`;
     }
   }
 
-  // 5. KPI Card 3: ความคืบหน้าตัวชี้วัด (วัดผลแล้วกี่ตัว)
+  // 5. KPI Card 3: ความคืบหน้าตัวชี้วัด
   const indicators = getActiveIndicators();
   let scoredIndCount = 0;
   indicators.forEach(ind => {
@@ -6265,9 +6279,9 @@ function renderDashboardView() {
   const scoreDetailEl = document.getElementById('dash-stat-score-detail');
   const scoreProgPct = Math.round((scoredIndCount / (indicators.length || 1)) * 100);
   if (scoreProgEl) scoreProgEl.textContent = `${scoredIndCount}/${indicators.length}`;
-  if (scoreDetailEl) scoreDetailEl.textContent = `บันทึกคะแนนแล้ว ${scoreProgPct}% (${indicators.length - scoredIndCount} ตัวชี้วัดคงเหลือ)`;
+  if (scoreDetailEl) scoreDetailEl.textContent = `บันทึกแล้ว ${scoreProgPct}% (เหลือ ${indicators.length - scoredIndCount})`;
 
-  // 6. KPI Card 4: ความพร้อมเล่ม ปพ.5
+  // 6. KPI Card 4: สถานะ ปพ.5
   const pp5StatusEl = document.getElementById('dash-stat-pp5-status');
   const pp5DetailEl = document.getElementById('dash-stat-pp5-detail');
   if (pp5StatusEl) {
@@ -6283,7 +6297,7 @@ function renderDashboardView() {
     }
   }
   if (pp5DetailEl) {
-    pp5DetailEl.textContent = `ครอบคลุมประเมินผลภาคเรียนที่ ${state.currentSemester}`;
+    pp5DetailEl.textContent = `ภาคเรียนที่ ${state.currentSemester}`;
   }
 
   // 7. Left Column: คาบเรียนตกค้าง
@@ -6295,7 +6309,7 @@ function renderDashboardView() {
         <div class="bg-amber-50 rounded-2xl p-4 border border-amber-200/90 text-xs shadow-2xs">
           <div class="flex items-center justify-between font-bold text-amber-900 mb-2">
             <span class="flex items-center gap-1.5">
-              <span>⏰</span> แจ้งเตือนคาบเรียนตกค้าง (ยังไม่เช็คชื่อ)
+              <span>⏰</span> คาบตกค้าง (ยังไม่เช็คชื่อ)
             </span>
             <span class="px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 font-bold">${missedDates.length} คาบ</span>
           </div>
@@ -6313,23 +6327,23 @@ function renderDashboardView() {
     }
   }
 
-  // 8. Left Column: แจ้งเตือนเวลาเรียนต่ำกว่า 80% (สุ่มเสี่ยง มส.)
+  // 8. Left Column: แจ้งเตือนเวลาเรียนต่ำกว่า 80%
   const atRiskContainer = document.getElementById('dash-atrisk-container');
   if (atRiskContainer) {
     if (atRiskStudents.length === 0) {
       atRiskContainer.innerHTML = `
         <div class="p-3 bg-emerald-50 rounded-xl text-emerald-800 text-xs font-medium flex items-center gap-2 border border-emerald-200">
-          <span>✅</span> ไม่มีนักเรียนที่เวลาเรียนต่ำกว่า 80% ในห้องนี้ (สถานะปกติทุกคน)
+          <span>✅</span> ผ่านเกณฑ์ 80% ทุกคน
         </div>
       `;
     } else {
       atRiskContainer.innerHTML = `
         <div class="space-y-2">
-          <p class="text-xs text-rose-700 font-semibold">พบนักเรียนเวลาเรียนต่ำกว่า 80% (ติด มส.) จำนวน ${atRiskStudents.length} คน:</p>
+          <p class="text-xs text-rose-700 font-semibold">ต่ำกว่า 80% (${atRiskStudents.length} คน):</p>
           <div class="divide-y divide-rose-100 bg-rose-50/50 rounded-xl border border-rose-200 p-2 max-h-48 overflow-y-auto">
             ${atRiskStudents.map(st => `
               <div class="py-1.5 px-2 flex items-center justify-between text-xs">
-                <span class="font-medium text-slate-800">เลขที่ ${st.student_no} ${st.name}</span>
+                <span class="font-medium text-slate-800">${st.student_no}. ${st.name}</span>
                 <span class="badge-ms">มส. (${st.attStats.percentage}%)</span>
               </div>
             `).join('')}
@@ -6339,7 +6353,7 @@ function renderDashboardView() {
     }
   }
 
-  // 9. Left Column: จุดที่ควรสอนซ่อมเสริม (ตัวชี้วัดที่คะแนนเฉลี่ยน้อยสุด)
+  // 9. Left Column: จุดควรเสริม
   const weakestBox = document.getElementById('dash-weakest-insight-box');
   if (weakestBox) {
     const indicatorAverages = indicators.map(ind => {
@@ -6365,26 +6379,23 @@ function renderDashboardView() {
         <div class="bg-amber-50/90 p-4 rounded-3xl border border-amber-200/90 shadow-xs space-y-2">
           <div class="flex items-center gap-2 text-xs font-bold text-amber-900">
             <span class="text-base">💡</span>
-            <span>จุดที่ควรจัดสอนซ่อมเสริม (คะแนนเฉลี่ยต่ำสุด)</span>
+            <span>จุดควรเสริม (ค่าเฉลี่ยต่ำสุด)</span>
           </div>
           <div class="bg-white/80 p-3 rounded-2xl border border-amber-200 text-xs">
             <h4 class="font-bold text-slate-800">
               <span class="text-rose-600 underline">${weakest.id}</span>: ${weakest.name}
             </h4>
             <p class="text-slate-600 mt-1">
-              คะแนนเฉลี่ย <strong>${weakest.avg} / ${weakest.max} คะแนน</strong> (คิดเป็น ${weakest.percent}%)
+              เฉลี่ย <strong>${weakest.avg}/${weakest.max}</strong> (${weakest.percent}%)
             </p>
           </div>
-          <p class="text-[11px] text-amber-800 leading-relaxed">
-            แนะนำจัดกิจกรรมทบทวน หรือเตรียมใบงานเสริมความเข้าใจก่อนสอบวัดผลกลางภาค/ปลายภาค
-          </p>
         </div>
       `;
     } else {
       weakestBox.innerHTML = `
         <div class="bg-blue-50/80 p-4 rounded-3xl border border-blue-200 shadow-xs flex items-center gap-2.5 text-xs text-blue-900">
           <span class="text-lg">✨</span>
-          <span>คะแนนผลการเรียนทุกตัวชี้วัดอยู่ในเกณฑ์ดีเยี่ยม</span>
+          <span>คะแนนทุกตัวชี้วัดอยู่ในเกณฑ์ดี</span>
         </div>
       `;
     }
@@ -6482,7 +6493,7 @@ function renderDashboardView() {
 
     const gradeNote = document.getElementById('dash-grade-dist-note');
     if (gradeNote) {
-      gradeNote.textContent = `คำนวณจาก${targetStats.scopeLabel} (คะแนนเต็ม ${evalMax} คะแนน) • เกณฑ์เป้าหมายโรงเรียน ≥ ${targetStats.targetScorePct}% (เกรด 3.0 ขึ้นไป)`;
+      gradeNote.textContent = `อิง${targetStats.scopeLabel} (เต็ม ${evalMax}) • เป้าหมาย ≥ ${targetStats.targetScorePct}% (เกรด 3+)`;
     }
 
     const gradeLabels = ['เกรด 4', 'เกรด 3.5', 'เกรด 3', 'เกรด 2.5', 'เกรด 2', 'เกรด 1.5', 'เกรด 1', 'เกรด 0'];
@@ -6655,10 +6666,10 @@ function renderDashboardSchoolTargetSection(stats) {
   if (!container) return;
 
   const scopes = [
-    { key: 'measured', label: 'ที่วัดผลแล้ว (ปัจจุบัน)' },
-    { key: '1', label: 'เทอม 1 (50)' },
-    { key: '2', label: 'เทอม 2 (50)' },
-    { key: 'all', label: 'ทั้งปี (100)' }
+    { key: 'measured', label: 'วัดผลแล้ว' },
+    { key: '1', label: 'เทอม 1' },
+    { key: '2', label: 'เทอม 2' },
+    { key: 'all', label: 'ทั้งปี' }
   ];
 
   const barWidth = Math.min(100, Math.max(0, stats.achievedStudentPct));
@@ -6667,15 +6678,15 @@ function renderDashboardSchoolTargetSection(stats) {
   let cardBorderClass = 'border-slate-200/90';
 
   if (!stats.hasAnyScore || stats.totalStudents === 0) {
-    statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">⏳ รอการบันทึกคะแนนในช่วงนี้</span>`;
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">⏳ รอคะแนน</span>`;
     barColorClass = 'bg-slate-300';
   } else if (stats.isTargetMet) {
     const diff = Math.round((stats.achievedStudentPct - stats.targetStudentPct) * 10) / 10;
-    statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">✅ บรรลุเป้าหมายสถานศึกษาแล้ว${diff > 0 ? ` (+${diff}%)` : ''}</span>`;
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">✅ บรรลุเป้าหมาย${diff > 0 ? ` (+${diff}%)` : ''}</span>`;
     barColorClass = 'bg-gradient-to-r from-emerald-500 to-teal-500';
     cardBorderClass = 'border-emerald-200';
   } else {
-    statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">🎯 กำลังเร่งพัฒนา (ต้องช่วยอีก ${stats.studentsNeeded} คน เพื่อถึงเป้า ${stats.targetStudentPct}%)</span>`;
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">🎯 ขาดอีก ${stats.studentsNeeded} คน (เป้า ${stats.targetStudentPct}%)</span>`;
     barColorClass = 'bg-gradient-to-r from-amber-500 to-orange-500';
     cardBorderClass = 'border-amber-200';
   }
@@ -6686,10 +6697,10 @@ function renderDashboardSchoolTargetSection(stats) {
     ? stats.nearList.map(item => `
         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200" title="คะแนน ${item.score}/${item.maxScore}">
           <span>${item.student.name}</span>
-          <span class="text-amber-700 font-bold">(${item.pct}% • ขาด ${item.pointsNeeded} คะแนน)</span>
+          <span class="text-amber-700 font-bold">(${item.pct}% • ขาด ${item.pointsNeeded})</span>
         </span>
       `).join('')
-    : `<span class="text-xs text-slate-400">ไม่มีนักเรียนในกลุ่มนี้</span>`;
+    : `<span class="text-xs text-slate-400">ไม่มี</span>`;
 
   const passedChipsHtml = stats.passedList.length > 0
     ? stats.passedList.map(item => `
@@ -6698,12 +6709,12 @@ function renderDashboardSchoolTargetSection(stats) {
           <span class="text-emerald-700 font-bold">(${item.pct}%)</span>
         </span>
       `).join('')
-    : `<span class="text-xs text-slate-400">ยังไม่มีนักเรียนที่ผ่านเกณฑ์ในขอบเขตนี้</span>`;
+    : `<span class="text-xs text-slate-400">ยังไม่มี</span>`;
 
   const belowHtml = stats.belowList.length > 0 ? `
     <div class="pt-2 border-t border-slate-100">
       <div class="text-[11px] font-bold text-rose-700 mb-1.5 flex items-center gap-1.5">
-        <span>🔴 กลุ่มควรเสริมพิเศษ (&lt; ${stats.nearThresholdPct}%) — ${stats.belowList.length} คน:</span>
+        <span>🔴 ต่ำกว่า ${stats.nearThresholdPct}% (${stats.belowList.length})</span>
       </div>
       <div class="flex flex-wrap gap-1.5">
         ${stats.belowList.map(item => `
@@ -6722,10 +6733,10 @@ function renderDashboardSchoolTargetSection(stats) {
         <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl shrink-0">🎯</div>
         <div>
           <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug">
-            เป้าหมายสถานศึกษา (SAR): นักเรียนร้อยละ ${stats.targetStudentPct} ได้คะแนนร้อยละ ${stats.targetScorePct} ขึ้นไป
+            เป้าหมายสถานศึกษา (SAR)
           </h3>
           <p class="text-[11px] text-slate-500 mt-0.5">
-            เกณฑ์อ้างอิงจาก${stats.scopeLabel} (คะแนนเต็ม ${stats.maxScore} คะแนน ➔ ต้องได้ ≥ ${stats.minRequiredScore} คะแนน)
+            อิง${stats.scopeLabel} • เต็ม ${stats.maxScore} (เกณฑ์ ≥ ${stats.minRequiredScore})
           </p>
         </div>
       </div>
@@ -6752,7 +6763,7 @@ function renderDashboardSchoolTargetSection(stats) {
           ${stats.hasAnyScore ? `${stats.achievedStudentPct}%` : '-%'}
         </span>
         <span class="text-xs sm:text-sm font-semibold text-slate-600">
-          (${stats.passedCount} / ${stats.totalStudents} คน)
+          (${stats.passedCount}/${stats.totalStudents} คน)
         </span>
         <div class="w-full mt-1">${statusBadgeHtml}</div>
       </div>
@@ -6760,7 +6771,7 @@ function renderDashboardSchoolTargetSection(stats) {
       <div class="lg:col-span-8 space-y-2 pt-3 lg:pt-0">
         <div class="flex justify-between text-[11px] font-semibold text-slate-500">
           <span>0%</span>
-          <span class="text-rose-600 font-bold">เส้นเป้าหมายสถานศึกษา: ${stats.targetStudentPct}%</span>
+          <span class="text-rose-600 font-bold">เป้า ${stats.targetStudentPct}%</span>
           <span>100%</span>
         </div>
         <div class="relative w-full h-4 bg-slate-100 rounded-full border border-slate-200/80 overflow-visible">
@@ -6782,7 +6793,7 @@ function renderDashboardSchoolTargetSection(stats) {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2 border-t border-slate-100">
         <div class="space-y-1.5">
           <div class="text-[11px] font-bold text-emerald-700 flex items-center gap-1.5">
-            <span>🟢 ผ่านเกณฑ์ ≥ ${stats.targetScorePct}% (${stats.passedCount} คน):</span>
+            <span>🟢 ผ่าน ≥ ${stats.targetScorePct}% (${stats.passedCount})</span>
           </div>
           <div class="flex flex-wrap gap-1.5">
             ${passedChipsHtml}
@@ -6790,7 +6801,7 @@ function renderDashboardSchoolTargetSection(stats) {
         </div>
         <div class="space-y-1.5">
           <div class="text-[11px] font-bold text-amber-800 flex items-center gap-1.5">
-            <span>🟡 กลุ่มลุ้นใกล้ถึงเป้า (${stats.nearThresholdPct}–${stats.targetScorePct - 1}%) (${stats.nearList.length} คน):</span>
+            <span>🟡 ใกล้ถึงเป้า ${stats.nearThresholdPct}–${stats.targetScorePct - 1}% (${stats.nearList.length})</span>
           </div>
           <div class="flex flex-wrap gap-1.5">
             ${nearChipsHtml}
@@ -7630,10 +7641,13 @@ function renderClassroomsView() {
 
   const classrooms = state.classrooms || DEFAULT_CLASSROOMS;
 
+  const activeStudents = state.students.filter(s => s.status !== 'ย้ายออก');
+  const transferredStudents = state.students.filter(s => s.status === 'ย้ายออก');
+
   let totalBoys = 0;
   let totalGirls = 0;
 
-  state.students.forEach(s => {
+  activeStudents.forEach(s => {
     const g = s.gender || detectGenderFromName(s.name);
     if (g === 'หญิง') totalGirls++;
     else totalBoys++;
@@ -7641,25 +7655,31 @@ function renderClassroomsView() {
 
   const elRooms = document.getElementById('cls-stat-total-rooms');
   const elStudents = document.getElementById('cls-stat-total-students');
+  const elTransferredNote = document.getElementById('cls-stat-transferred-note');
   const elBoys = document.getElementById('cls-stat-boys');
   const elGirls = document.getElementById('cls-stat-girls');
 
   if (elRooms) elRooms.textContent = `${classrooms.length} ห้อง`;
-  if (elStudents) elStudents.textContent = `${state.students.length} คน`;
+  if (elStudents) elStudents.textContent = `${activeStudents.length} คน`;
+  if (elTransferredNote) {
+    elTransferredNote.textContent = transferredStudents.length > 0 ? `(ย้ายออก ${transferredStudents.length} คน)` : '';
+  }
   if (elBoys) elBoys.textContent = `${totalBoys} คน`;
   if (elGirls) elGirls.textContent = `${totalGirls} คน`;
 
   if (classrooms.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-slate-400">ยังไม่มีข้อมูลห้องเรียนในระบบ</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-slate-400">ยังไม่มีข้อมูลห้องเรียนในระบบ</td></tr>`;
     return;
   }
 
   tbody.innerHTML = classrooms.map(c => {
-    const roomStudents = state.students.filter(s => isStudentInClassroom(s, c));
+    const roomAll = state.students.filter(s => isStudentInClassroom(s, c));
+    const roomActive = roomAll.filter(s => s.status !== 'ย้ายออก');
+    const roomTransferredCount = roomAll.filter(s => s.status === 'ย้ายออก').length;
 
     let boys = 0;
     let girls = 0;
-    roomStudents.forEach(s => {
+    roomActive.forEach(s => {
       const g = s.gender || detectGenderFromName(s.name);
       if (g === 'หญิง') girls++;
       else boys++;
@@ -7671,13 +7691,18 @@ function renderClassroomsView() {
           <span class="badge-classroom">${c.name}</span>
         </td>
         <td class="py-3.5 px-4 text-center font-bold text-slate-800 text-sm">
-          ${roomStudents.length}
+          ${roomActive.length}
         </td>
         <td class="py-3.5 px-4 text-center font-semibold text-indigo-700">
           ${boys}
         </td>
         <td class="py-3.5 px-4 text-center font-semibold text-pink-700">
           ${girls}
+        </td>
+        <td class="py-3.5 px-4 text-center">
+          ${roomTransferredCount > 0 
+            ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-300">${roomTransferredCount}</span>` 
+            : `<span class="text-slate-300">-</span>`}
         </td>
         <td class="py-3.5 px-4 text-right">
           <div class="inline-flex items-center gap-1.5">

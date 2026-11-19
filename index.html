@@ -56,7 +56,7 @@
         <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
           <span>EduHistory</span>
         </h1>
-        <p class="text-xs text-slate-500">ระบบจัดการชั้นเรียนวิชาประวัติศาสตร์ By Kru Por</p>
+        <p class="text-xs text-slate-500">จัดการชั้นเรียน • By Kru Por</p>
       </div>
     </div>
 
@@ -104,13 +104,13 @@
         <button type="button" onclick="exitArchiveView()" class="ml-1 text-[11px] underline text-amber-800 hover:text-amber-950 cursor-pointer font-bold">กลับปีปัจจุบัน</button>
       </div>
 
-      <!-- Current Semester Display (Auto Active - ไม่มีดรอปดาวน์) -->
+      <!-- Current Semester Display -->
       <div class="hidden sm:flex items-center bg-slate-100 border border-slate-200/90 rounded-xl px-2.5 py-1 gap-1.5 shadow-2xs">
         <span class="text-xs text-indigo-700 font-semibold">ภาค:</span>
         <span id="top-semester-text" class="text-xs sm:text-sm font-bold text-slate-800">ภาคเรียนที่ 1</span>
-        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-300 px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-2xs" title="ระบบปรับอัตโนมัติตามวันนี้">
+        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-300 px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-2xs" title="ปรับอัตโนมัติตามวันปัจจุบัน">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          Auto Active
+          อัตโนมัติ
         </span>
         <input type="hidden" id="semester-selector" value="1" />
       </div>
@@ -118,7 +118,7 @@
       <!-- Sync Status Badge -->
       <div id="sync-status-badge" class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
         <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
-        <span id="sync-status-label">โหมดออฟไลน์</span>
+        <span id="sync-status-label">ออฟไลน์</span>
       </div>
     </div>
   </header>
@@ -332,14 +332,14 @@
             </div>
             <div>
               <div class="flex flex-wrap items-center gap-2">
-                <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">แดชบอร์ดภาพรวมการเรียนการสอน</h2>
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">ภาพรวมการสอน</h2>
                 <span id="dash-grade-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">ห้อง ป.6</span>
                 <span id="dash-term-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">ภาคเรียนที่ 2</span>
               </div>
               <p class="text-xs sm:text-sm text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
-                <span id="dash-subject-name" class="font-medium text-slate-700">วิชาประวัติศาสตร์ (ส 16102)</span>
+                <span id="dash-subject-name" class="font-medium text-slate-700">ประวัติศาสตร์ (ส 16102)</span>
                 <span>•</span>
-                <span id="dash-today-thai-date" class="font-medium text-blue-700">วันที่ 16 พฤศจิกายน 2569</span>
+                <span id="dash-today-thai-date" class="font-medium text-blue-700">16 พฤศจิกายน 2569</span>
               </p>
             </div>
           </div>
@@ -352,10 +352,10 @@
 
         <!-- 4 Key Metric Cards (KPIs) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Card 1: นักเรียนในห้องเรียน -->
+          <!-- Card 1: นักเรียน -->
           <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-blue-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">นักเรียนในห้อง</span>
+              <span class="text-xs font-bold text-slate-500 tracking-wider">นักเรียน</span>
               <span class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">👥</span>
             </div>
             <div class="mt-3 flex items-baseline gap-2">
@@ -363,51 +363,51 @@
               <span class="text-xs text-slate-500">คน</span>
             </div>
             <div id="dash-stat-students-detail" class="mt-2 text-xs text-slate-500 flex items-center gap-2">
-              กำลังศึกษา - คน
+              ปกติ - คน
             </div>
           </div>
 
-          <!-- Card 2: อัตราเวลาเรียนเฉลี่ย -->
+          <!-- Card 2: เวลาเรียนเฉลี่ย -->
           <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-emerald-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">เวลาเรียนเฉลี่ย</span>
+              <span class="text-xs font-bold text-slate-500 tracking-wider">เวลาเรียนเฉลี่ย</span>
               <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">⏱️</span>
             </div>
             <div class="mt-3 flex items-baseline gap-2">
               <span id="dash-stat-att-rate" class="text-3xl font-extrabold text-emerald-600">-%</span>
-              <span class="text-xs text-slate-500">ภาพรวม</span>
+              <span class="text-xs text-slate-500">เฉลี่ย</span>
             </div>
             <div id="dash-stat-att-detail" class="mt-2 text-xs text-slate-500">
-              เกณฑ์ขั้นต่ำ 80%
+              เกณฑ์ 80%
             </div>
           </div>
 
-          <!-- Card 3: ความคืบหน้าการวัดผลคะแนน -->
+          <!-- Card 3: ตัวชี้วัดที่เก็บแล้ว -->
           <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-indigo-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">ความคืบหน้าตัวชี้วัด</span>
+              <span class="text-xs font-bold text-slate-500 tracking-wider">ตัวชี้วัดที่เก็บแล้ว</span>
               <span class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">📝</span>
             </div>
             <div class="mt-3 flex items-baseline gap-2">
               <span id="dash-stat-score-progress" class="text-3xl font-extrabold text-indigo-600">-/-</span>
-              <span class="text-xs text-slate-500">ตัวชี้วัด</span>
+              <span class="text-xs text-slate-500">ตัว</span>
             </div>
             <div id="dash-stat-score-detail" class="mt-2 text-xs text-slate-500">
-              บันทึกคะแนนแล้ว -%
+              บันทึกแล้ว -%
             </div>
           </div>
 
-          <!-- Card 4: ความพร้อมเล่ม ปพ.5 -->
+          <!-- Card 4: สถานะ ปพ.5 -->
           <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-purple-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">ความพร้อมเล่ม ปพ.5</span>
+              <span class="text-xs font-bold text-slate-500 tracking-wider">สถานะ ปพ.5</span>
               <span class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg">📑</span>
             </div>
             <div class="mt-3 flex items-baseline gap-2">
-              <span id="dash-stat-pp5-status" class="text-2xl font-extrabold text-purple-600">พร้อมสรุปผล</span>
+              <span id="dash-stat-pp5-status" class="text-2xl font-extrabold text-purple-600">พร้อมสรุป</span>
             </div>
             <div id="dash-stat-pp5-detail" class="mt-2 text-xs text-slate-500">
-              ครอบคลุมเทอม 1 และ 2
+              เทอม 1–2
             </div>
           </div>
         </div>
@@ -417,34 +417,29 @@
           <!-- Rendered dynamically by renderDashboardView() -->
         </div>
 
-        <!-- Quick Action Hub (ทางด่วนงานสอนประจำวัน) -->
-        <div class="bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-slate-50 p-5 sm:p-6 rounded-3xl border border-blue-100 shadow-2xs">
-          <div class="flex items-center justify-between mb-3.5">
-            <h3 class="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-2">
-              <span>⚡</span> ทางด่วนงานประจำวัน (Quick Actions)
+        <!-- Quick Action Hub -->
+        <div class="bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 p-4 sm:p-5 rounded-3xl border border-blue-100 shadow-2xs">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <span>⚡</span> ทางลัดประจำวัน
             </h3>
-            <span class="text-[11px] text-slate-500">เข้าถึงงานสำคัญได้ใน 1 คลิก</span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <button onclick="switchView('att_daily'); setAttendanceDateToToday();" class="p-4 bg-white rounded-2xl border border-blue-200 hover:border-blue-400 hover:bg-blue-50/60 shadow-2xs transition-all flex flex-col items-center justify-center gap-1.5 text-center group cursor-pointer">
-              <span class="text-2xl group-hover:scale-110 transition-transform">📝</span>
-              <span class="text-xs font-bold text-slate-800 group-hover:text-blue-600">เช็คชื่อคาบวันนี้</span>
-              <span class="text-[10px] text-slate-400">บันทึกเวลาเรียนวันนี้</span>
+            <button onclick="switchView('att_daily'); setAttendanceDateToToday();" class="p-3.5 bg-white rounded-2xl border border-blue-200/90 hover:border-blue-400 hover:bg-blue-50/60 shadow-2xs transition-all flex items-center justify-center gap-2.5 group cursor-pointer">
+              <span class="text-xl group-hover:scale-110 transition-transform">📝</span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-blue-600">เช็คชื่อวันนี้</span>
             </button>
-            <button onclick="switchView('gradebook')" class="p-4 bg-white rounded-2xl border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/60 shadow-2xs transition-all flex flex-col items-center justify-center gap-1.5 text-center group cursor-pointer">
-              <span class="text-2xl group-hover:scale-110 transition-transform">🔥</span>
+            <button onclick="switchView('gradebook')" class="p-3.5 bg-white rounded-2xl border border-indigo-200/90 hover:border-indigo-400 hover:bg-indigo-50/60 shadow-2xs transition-all flex items-center justify-center gap-2.5 group cursor-pointer">
+              <span class="text-xl group-hover:scale-110 transition-transform">🔥</span>
               <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600">บันทึกคะแนน</span>
-              <span class="text-[10px] text-slate-400">กรอกคะแนนตัวชี้วัด</span>
             </button>
-            <button onclick="switchView('pp5_summary')" class="p-4 bg-white rounded-2xl border border-purple-200 hover:border-purple-400 hover:bg-purple-50/60 shadow-2xs transition-all flex flex-col items-center justify-center gap-1.5 text-center group cursor-pointer">
-              <span class="text-2xl group-hover:scale-110 transition-transform">📑</span>
-              <span class="text-xs font-bold text-slate-800 group-hover:text-purple-600">ดูเล่ม ปพ.5 รวม</span>
-              <span class="text-[10px] text-slate-400">สรุปคะแนนและเกรด</span>
+            <button onclick="switchView('pp5_summary')" class="p-3.5 bg-white rounded-2xl border border-purple-200/90 hover:border-purple-400 hover:bg-purple-50/60 shadow-2xs transition-all flex items-center justify-center gap-2.5 group cursor-pointer">
+              <span class="text-xl group-hover:scale-110 transition-transform">📑</span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-purple-600">สรุป ปพ.5</span>
             </button>
-            <button onclick="exportPP5Excel()" class="p-4 bg-white rounded-2xl border border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/60 shadow-2xs transition-all flex flex-col items-center justify-center gap-1.5 text-center group cursor-pointer">
-              <span class="text-2xl group-hover:scale-110 transition-transform">📥</span>
-              <span class="text-xs font-bold text-slate-800 group-hover:text-emerald-600">ส่งออก ปพ.5 Excel</span>
-              <span class="text-[10px] text-slate-400">ดาวน์โหลดไฟล์ .xlsx</span>
+            <button onclick="exportPP5Excel()" class="p-3.5 bg-white rounded-2xl border border-emerald-200/90 hover:border-emerald-400 hover:bg-emerald-50/60 shadow-2xs transition-all flex items-center justify-center gap-2.5 group cursor-pointer">
+              <span class="text-xl group-hover:scale-110 transition-transform">📥</span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-emerald-600">ส่งออก Excel</span>
             </button>
           </div>
         </div>
@@ -460,13 +455,12 @@
               <!-- Rendered by app.js if any missing lessons -->
             </div>
 
-            <!-- 2. แจ้งเตือนเวลาเรียนต่ำกว่า 80% (สุ่มเสี่ยง มส.) -->
+            <!-- 2. แจ้งเตือนเวลาเรียนต่ำกว่า 80% -->
             <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
               <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
                 <h3 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span>⚠️</span> การประเมินเวลาเรียน (เกณฑ์ 80%)
+                  <span>⚠️</span> เวลาเรียน (&lt; 80% เสี่ยง มส.)
                 </h3>
-                <span class="text-[11px] text-slate-400">ระวัง มส.</span>
               </div>
               <div id="dash-atrisk-container">
                 <!-- Rendered by app.js -->
@@ -483,13 +477,13 @@
           <!-- Right Column (7 Cols): Visual Analytics Charts -->
           <div class="lg:col-span-7 space-y-5">
             
-            <!-- Chart 1: สัดส่วนการมาเรียนประจำห้อง (มา/ลา/ป่วย/ขาด) -->
+            <!-- Chart 1: สถิติการเข้าเรียน -->
             <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs">
               <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
                 <h3 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span>📊</span> สัดส่วนการเข้าเรียนของนักเรียนในห้อง
+                  <span>📊</span> สถิติการเข้าเรียน
                 </h3>
-                <span class="text-[11px] text-slate-400">สะสมตลอดภาคเรียน</span>
+                <span class="text-[11px] text-slate-400">สะสม</span>
               </div>
               <div class="relative h-60 sm:h-64 w-full flex items-center justify-center">
                 <canvas id="dashAttRatioChartCanvas"></canvas>
@@ -499,11 +493,11 @@
               </div>
             </div>
 
-            <!-- Chart 2: การกระจายระดับผลการเรียน (ตัดเกรด 0 - 4) -->
+            <!-- Chart 2: ระดับผลการเรียน -->
             <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs">
               <div class="flex flex-wrap items-center justify-between gap-2 mb-3 border-b border-slate-100 pb-2.5">
                 <h3 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span>🎓</span> การกระจายระดับผลการเรียน (เกรด 0 - 4)
+                  <span>🎓</span> ระดับผลการเรียน (เกรด 0–4)
                 </h3>
                 <span id="dash-grade-target-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   คะแนนเก็บ + สอบ
@@ -513,7 +507,7 @@
                 <canvas id="dashGradeDistChartCanvas"></canvas>
               </div>
               <p id="dash-grade-dist-note" class="text-[11px] text-slate-400 text-center mt-2">
-                คำนวณจากคะแนนที่บันทึกแล้วในระบบตามเกณฑ์มาตรฐาน สพฐ. (เกรด 1.0 - 4.0)
+                อิงคะแนนที่วัดผลแล้ว • เป้าหมาย ≥ 70%
               </p>
             </div>
 
@@ -614,11 +608,8 @@
             </div>
             <div>
               <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>ระบบเช็คชื่อและรายงานเวลาเรียน</span>
+                <span>เช็คชื่อและเวลาเรียน</span>
               </h2>
-              <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-                บันทึกเวลาเรียนรายวัน รายงานตารางประจำเดือน และสรุปผลเวลาเรียนตลอดภาคเรียนสำหรับลง ปพ.5
-              </p>
             </div>
           </div>
 
@@ -629,21 +620,21 @@
               onclick="switchAttendanceSubTab('daily')" 
               class="touch-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap bg-white text-blue-700 shadow-xs"
             >
-              <span>📝</span> <span>บันทึกรายวัน</span>
+              <span>📝</span> <span>รายวัน</span>
             </button>
             <button 
               id="subtab-btn-monthly"
               onclick="switchAttendanceSubTab('monthly')" 
               class="touch-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5 whitespace-nowrap"
             >
-              <span>📅</span> <span>รายงานประจำเดือน</span>
+              <span>📅</span> <span>รายเดือน</span>
             </button>
             <button 
               id="subtab-btn-semester"
               onclick="switchAttendanceSubTab('semester')" 
               class="touch-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5 whitespace-nowrap"
             >
-              <span>📊</span> <span>สรุปผลภาคเรียน (ปพ.5)</span>
+              <span>📊</span> <span>สรุป (ปพ.5)</span>
             </button>
           </div>
         </div>
@@ -783,7 +774,7 @@
           </div>
 
           <p class="text-xs text-slate-500 text-center">
-            💡 แตะปุ่ม <span class="text-emerald-600 font-semibold">มา</span> / <span class="text-amber-600 font-semibold">ลา</span> / <span class="text-sky-600 font-semibold">ป่วย</span> / <span class="text-rose-600 font-semibold">ขาด</span> เพื่อเปลี่ยนสถานะทันที | เวลาเรียนต่ำกว่า 80% ติด <span class="badge-ms text-[10px]">มส.</span>
+            💡 แตะ <span class="text-emerald-600 font-semibold">มา</span> / <span class="text-amber-600 font-semibold">ลา</span> / <span class="text-sky-600 font-semibold">ป่วย</span> / <span class="text-rose-600 font-semibold">ขาด</span> เพื่อสลับสถานะ • เวลาเรียน &lt; 80% ติด <span class="badge-ms text-[10px]">มส.</span>
           </p>
         </div>
 
@@ -882,17 +873,17 @@
              ========================================== -->
         <div id="panel-att-semester" class="hidden space-y-5">
           
-          <!-- Condition Filter Card (Matching Image 2) -->
-          <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-4">
-            <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <!-- Condition Filter Card -->
+          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs space-y-3.5">
+            <div class="flex items-center gap-2 border-b border-slate-100 pb-2.5">
               <span class="text-base">🔍</span>
-              <h3 class="text-sm sm:text-base font-bold text-slate-900">กำหนดเงื่อนไขรายงานเวลาเรียน</h3>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">ตัวกรองรายงาน</h3>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end">
-              <!-- ห้องเรียนที่เลือก (อิงตามจุดเลือกห้องด้านบน) -->
+              <!-- ห้องเรียนที่เลือก -->
               <div class="sm:col-span-4">
-                <label class="block text-xs font-bold text-slate-700 mb-1">ห้องเรียน (อิงจากด้านบน)</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">ห้องเรียน</label>
                 <div class="flex items-center gap-2 px-3 py-2 bg-blue-50/70 border border-blue-200 rounded-xl text-sm font-bold text-blue-900 shadow-2xs">
                   <span>🏫</span>
                   <span id="sem-att-room-display">ห้อง ป.6</span>
@@ -902,7 +893,7 @@
 
               <!-- เลือกช่วงเวลาการรายงานผล -->
               <div class="sm:col-span-5">
-                <label for="sem-att-semester-select" class="block text-xs font-bold text-slate-700 mb-1">ช่วงเวลาการรายงานผล</label>
+                <label for="sem-att-semester-select" class="block text-xs font-bold text-slate-700 mb-1">ช่วงเวลา</label>
                 <select 
                   id="sem-att-semester-select" 
                   onchange="renderSemesterAttendanceTab()" 
@@ -910,7 +901,7 @@
                 >
                   <option value="1">ภาคเรียนที่ 1</option>
                   <option value="2">ภาคเรียนที่ 2</option>
-                  <option value="all">🎓 ตลอดทั้งปีการศึกษา (รวมเทอม 1 + 2)</option>
+                  <option value="all">🎓 ทั้งปีการศึกษา (รวมเทอม 1 + 2)</option>
                 </select>
               </div>
 
@@ -920,14 +911,10 @@
                   onclick="exportSemesterAttendanceExcel()" 
                   class="touch-target w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <span>📥</span> <span>ดาวน์โหลด Excel (ปพ.5)</span>
+                  <span>📥</span> <span>Excel (ปพ.5)</span>
                 </button>
               </div>
             </div>
-
-            <p class="text-xs text-slate-500 pt-1">
-              * ระบบจะนับจำนวนคาบและคิดเปอร์เซ็นต์ เฉพาะวันที่อยู่ในช่วงเปิด-ปิดภาคเรียนที่ตั้งไว้เท่านั้น
-            </p>
           </div>
 
           <!-- Overview Stats -->
@@ -1015,11 +1002,11 @@
         <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-              <span>สมุดบันทึกคะแนนตัวชี้วัด (ปพ.5)</span>
+              <span>สมุดคะแนนตัวชี้วัด (ปพ.5)</span>
               <span id="gradebook-class-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">ห้อง ป.6</span>
             </h2>
             <p class="text-xs text-slate-500 mt-0.5">
-              คำนวณคะแนนและตัดเกรดอัตโนมัติ 8 ระดับ (80-100 = 4, 75-79 = 3.5, ..., 0-49 = 0)
+              เกณฑ์ 8 ระดับ: 80–100 = 4 • 75–79 = 3.5 • ... • 0–49 = 0
             </p>
           </div>
 
@@ -1032,7 +1019,7 @@
                 onclick="handleGradebookSemesterChange('1')" 
                 class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer"
               >
-                ภาคเรียนที่ 1 (50)
+                เทอม 1 (50)
               </button>
               <button 
                 type="button" 
@@ -1040,7 +1027,7 @@
                 onclick="handleGradebookSemesterChange('2')" 
                 class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer"
               >
-                ภาคเรียนที่ 2 (50)
+                เทอม 2 (50)
               </button>
               <button 
                 type="button" 
@@ -1048,23 +1035,23 @@
                 onclick="handleGradebookSemesterChange('all')" 
                 class="px-3 py-1.5 rounded-lg transition-all bg-white text-blue-700 font-bold shadow-xs cursor-pointer"
               >
-                🎓 ทั้งปีการศึกษา (100)
+                🎓 ทั้งปี (100)
               </button>
             </div>
 
-            <!-- Overdue Tracker Button (เช็คงานค้าง & ส่ง LINE) -->
+            <!-- Overdue Tracker Button -->
             <button 
               type="button" 
               onclick="openPendingWorkModal()" 
               class="touch-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
-              title="ตรวจสอบงานค้างรายคนและคัดลอกส่งไลน์ผู้ปกครอง"
+              title="ตรวจงานค้างและคัดลอกส่ง LINE"
             >
-              <span>🚨</span> <span>เช็คงานค้าง</span>
+              <span>🚨</span> <span>งานค้าง</span>
               <span id="gradebook-pending-badge" class="px-1.5 py-0.5 rounded-full bg-white text-amber-800 font-extrabold text-[10px]">2 คน</span>
             </button>
 
             <button onclick="exportPP5Excel()" class="touch-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center gap-1.5">
-              <span>📥</span> <span>Export ปพ.5 (.xlsx)</span>
+              <span>📥</span> <span>Export (.xlsx)</span>
             </button>
           </div>
         </div>
@@ -1089,14 +1076,12 @@
 
         <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 px-1 gap-2">
           <div class="flex items-center gap-2 flex-wrap">
-            <span>💡 <strong>คำแนะนำ:</strong> เลื่อนดูตารางได้รอบทิศทาง คอลัมน์ชื่อและแถวตัวชี้วัดจะล็อกนิ่ง (Freeze) ไว้เสมอ</span>
-            <span class="text-blue-600 font-semibold">• ⭐ รวมแปลง = คิดสัดส่วนตามน้ำหนักหน่วยอัตโนมัติเมื่อเก็บครบทุกตัวชี้วัด</span>
-            <span class="text-amber-700 font-semibold">• 💡 นำเมาส์ชี้ที่ "เต็ม .." หรือ "น้ำหนัก .." จะปรากฏปุ่ม ✏️ เพื่อคลิกแก้ไขคะแนน</span>
+            <span>💡 เลื่อนดูซ้าย–ขวาได้ • ⭐ รวมแปลงคำนวณอัตโนมัติ • ชี้ที่ "เต็ม" หรือ "น้ำหนัก" เพื่อแก้ไข</span>
           </div>
           <div class="flex items-center gap-3">
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 bg-emerald-500 rounded-sm"></span> ระหว่างทาง</span>
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 bg-rose-500 rounded-sm"></span> ปลายทาง</span>
-            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 bg-red-500 rounded-sm"></span> เกรด 0 (< 50%)</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 bg-red-500 rounded-sm"></span> เกรด 0</span>
           </div>
         </div>
       </section>
@@ -1208,12 +1193,12 @@
               </h2>
               <!-- Rating scale criteria badges -->
               <div class="flex items-center gap-2 text-xs text-slate-300 flex-wrap mt-1.5">
-                <span class="text-slate-400 font-medium">กรอกระดับคะแนน (0-3):</span>
-                <span class="px-2 py-0.5 rounded font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/30">3 = ดีเยี่ยม</span>
-                <span class="px-2 py-0.5 rounded font-bold text-blue-400 bg-blue-950/80 border border-blue-500/30">2 = ดี</span>
-                <span class="px-2 py-0.5 rounded font-bold text-amber-400 bg-amber-950/80 border border-amber-500/30">1 = ผ่าน</span>
-                <span class="px-2 py-0.5 rounded font-bold text-rose-400 bg-rose-950/80 border border-rose-500/30">0 = ไม่ผ่าน</span>
-                <span class="text-slate-400 text-[11px] ml-1">⚡ พิมพ์เลขแล้วบันทึกและเลื่อนช่องถัดไปอัตโนมัติ (ใช้ลูกศร ↑ ↓ ← → ได้)</span>
+                <span class="text-slate-400 font-medium">ระดับ (0–3):</span>
+                <span class="px-2 py-0.5 rounded font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/30">3 ดีเยี่ยม</span>
+                <span class="px-2 py-0.5 rounded font-bold text-blue-400 bg-blue-950/80 border border-blue-500/30">2 ดี</span>
+                <span class="px-2 py-0.5 rounded font-bold text-amber-400 bg-amber-950/80 border border-amber-500/30">1 ผ่าน</span>
+                <span class="px-2 py-0.5 rounded font-bold text-rose-400 bg-rose-950/80 border border-rose-500/30">0 ไม่ผ่าน</span>
+                <span class="text-slate-400 text-[11px] ml-1">⚡ บันทึกอัตโนมัติ (ใช้ลูกศรเลื่อนช่องได้)</span>
               </div>
             </div>
 
@@ -1222,25 +1207,25 @@
               <button 
                 type="button" 
                 onclick="autoEvaluateHolisticByGrade()" 
-                title="คำนวณและประเมินระดับคุณภาพตามเกรดเฉลี่ยของนักเรียนให้อัตโนมัติ"
+                title="ประเมินตามเกรดอัตโนมัติ"
                 class="px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                <span>⚡</span> <span>ประเมินอัตโนมัติตามเกรด</span>
+                <span>⚡</span> <span>ประเมินตามเกรด</span>
               </button>
               <button 
                 type="button" 
                 onclick="setAllHolisticLevel(3)" 
-                title="กำหนดระดับ 3 (ดีเยี่ยม) ให้นักเรียนทุกคนในแถบนี้"
+                title="ให้ระดับ 3 ทุกคน"
                 class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                <span>⚡</span> <span>3 (ดีเยี่ยม) ทุกคน</span>
+                <span>⚡</span> <span>ดีเยี่ยมทุกคน</span>
               </button>
               <button 
                 type="button" 
                 onclick="saveHolisticAssessments()" 
                 class="px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-900 hover:bg-slate-100 shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                <span>💾</span> <span>บันทึกผลประเมิน</span>
+                <span>💾</span> <span>บันทึก</span>
               </button>
             </div>
           </div>
@@ -1320,10 +1305,10 @@
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <h2 class="text-lg sm:text-xl font-extrabold text-white tracking-wide flex items-center gap-2">
-                <span>📋 แบบสรุปผลการพัฒนาคุณภาพผู้เรียน (ปพ.5)</span>
+                <span>📋 แบบสรุปผล ปพ.5</span>
               </h2>
               <p id="pp5-summary-sub-title" class="text-xs text-slate-400 mt-1">
-                โครงสร้างสัดส่วนคะแนนรายปี: ภาคเรียนที่ 1 (50 คะแนน) + ภาคเรียนที่ 2 (50 คะแนน) = 100 คะแนนเต็ม
+                เทอม 1 (50) + เทอม 2 (50) = 100 คะแนน
               </p>
             </div>
           </div>
@@ -1334,9 +1319,9 @@
           </div>
         </div>
 
-        <!-- Dual-Axis Interactive Control Bar (Scope & Data View) -->
+        <!-- Dual-Axis Interactive Control Bar -->
         <div class="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-          <!-- 1. Semester Scope Switcher (ทั้งปี / เทอม 1 / เทอม 2) -->
+          <!-- 1. Semester Scope Switcher -->
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
               <span>🗓️</span> <span>ช่วงเวลา:</span>
@@ -1348,7 +1333,7 @@
                 onclick="setPP5SemesterScope('all')" 
                 class="px-3.5 py-1.5 rounded-lg transition-all bg-white text-blue-700 font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
               >
-                <span>🎓</span> <span>ทั้งปีการศึกษา (100)</span>
+                <span>🎓</span> <span>ทั้งปี (100)</span>
               </button>
               <button 
                 type="button" 
@@ -1356,7 +1341,7 @@
                 onclick="setPP5SemesterScope('1')" 
                 class="px-3.5 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center gap-1.5"
               >
-                <span>📘</span> <span>ภาคเรียนที่ 1 (50)</span>
+                <span>📘</span> <span>เทอม 1 (50)</span>
               </button>
               <button 
                 type="button" 
@@ -1364,15 +1349,15 @@
                 onclick="setPP5SemesterScope('2')" 
                 class="px-3.5 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center gap-1.5"
               >
-                <span>🟣</span> <span>ภาคเรียนที่ 2 (50)</span>
+                <span>🟣</span> <span>เทอม 2 (50)</span>
               </button>
             </div>
           </div>
 
-          <!-- 2. Data View Mode Switcher (Active on All Year) -->
+          <!-- 2. Data View Mode Switcher -->
           <div id="pp5-filter-container" class="flex items-center gap-2 flex-wrap transition-opacity duration-200">
             <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
-              <span>👁️</span> <span>มุมมองข้อมูล:</span>
+              <span>👁️</span> <span>มุมมอง:</span>
             </span>
             <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
               <button 
@@ -1381,7 +1366,7 @@
                 onclick="setPP5SummaryFilter('all')" 
                 class="px-3 py-1.5 rounded-lg transition-all bg-white text-slate-900 font-bold shadow-xs cursor-pointer flex items-center gap-1"
               >
-                <span>📑</span> <span>ตารางรวมทั้งหมด</span>
+                <span>📑</span> <span>ทั้งหมด</span>
               </button>
               <button 
                 type="button" 
@@ -1389,7 +1374,7 @@
                 onclick="setPP5SummaryFilter('scores')" 
                 class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center gap-1"
               >
-                <span>📊</span> <span>เฉพาะคะแนน (100)</span>
+                <span>📊</span> <span>เฉพาะคะแนน</span>
               </button>
               <button 
                 type="button" 
@@ -1397,7 +1382,7 @@
                 onclick="setPP5SummaryFilter('assessments')" 
                 class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center gap-1"
               >
-                <span>⭐</span> <span>เฉพาะผลประเมิน 3 ด้าน</span>
+                <span>⭐</span> <span>เฉพาะ 3 ด้าน</span>
               </button>
             </div>
           </div>
@@ -1541,38 +1526,34 @@
             </div>
             <div>
               <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>ตั้งค่าข้อมูลทั่วไปและระบบ</span>
+                <span>ตั้งค่าระบบ</span>
               </h2>
-              <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-                กำหนดชื่อสถานศึกษา, โลโก้, ข้อมูลบุคลากรผู้ลงนาม, ระยะเวลาภาคเรียน และปฏิทินการจัดการเรียนรู้
-              </p>
             </div>
           </div>
           <div class="flex items-center gap-2 self-start sm:self-center">
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              ระบบบันทึกอัตโนมัติ (LocalStorage)
+              บันทึกอัตโนมัติ
             </span>
           </div>
         </div>
 
-        <!-- 1. ข้อมูลทั่วไปโรงเรียนและวิชา -->
+        <!-- 1. ข้อมูลโรงเรียนและบุคลากร -->
         <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-6">
           <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
             <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg font-bold shrink-0">
               🏫
             </div>
             <div>
-              <h3 class="text-base font-bold text-slate-900">ข้อมูลทั่วไปโรงเรียนและวิชา</h3>
-              <p class="text-xs text-slate-500">ข้อมูลสถานศึกษาสำหรับพิมพ์หัวเอกสาร ปพ.5 แบบประเมิน และรายงานทางวิชาการ</p>
+              <h3 class="text-base font-bold text-slate-900">ข้อมูลโรงเรียนและบุคลากร</h3>
             </div>
           </div>
 
-          <!-- School Name & Logo Grid (Balanced) -->
+          <!-- School Name & Logo Grid -->
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             <!-- School Name -->
             <div class="lg:col-span-8 space-y-1.5">
-              <label for="set-school-name" class="block text-xs font-bold text-slate-700">ชื่อโรงเรียน / สถานศึกษา</label>
+              <label for="set-school-name" class="block text-xs font-bold text-slate-700">ชื่อสถานศึกษา</label>
               <div class="relative">
                 <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                   🏛️
@@ -1584,12 +1565,11 @@
                   class="touch-target w-full pl-10 pr-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none bg-slate-50/60 transition-colors"
                 />
               </div>
-              <p class="text-[11px] text-slate-400">ชื่อสถานศึกษาจะปรากฏบนหัวเอกสาร ปพ.5 และแบบบันทึกคะแนนทุกหน้า</p>
             </div>
 
             <!-- School Logo Upload & Preview -->
             <div class="lg:col-span-4 space-y-1.5">
-              <label for="set-school-logo-file" class="block text-xs font-bold text-slate-700">รูปภาพโลโก้โรงเรียน (อัปโหลดจากเครื่อง)</label>
+              <label for="set-school-logo-file" class="block text-xs font-bold text-slate-700">โลโก้โรงเรียน</label>
               <div class="flex items-center gap-3 p-2 border border-slate-200/90 rounded-xl bg-slate-50/70">
                 <img id="set-logo-preview" src="" alt="โลโก้โรงเรียน" class="hidden w-11 h-11 object-contain rounded-lg border border-slate-200 bg-white p-1 shadow-2xs shrink-0" />
                 <div class="flex-1 min-w-0">
@@ -1600,7 +1580,6 @@
                     onchange="handleLogoUpload(event)"
                     class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
                   />
-                  <span class="text-[10px] text-slate-400 block truncate mt-0.5">รองรับไฟล์ PNG, JPG (ขนาดแนะนำ 1:1)</span>
                 </div>
               </div>
             </div>
@@ -1823,13 +1802,12 @@
             <div class="flex items-center gap-2.5">
               <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-base font-bold shrink-0">🎯</span>
               <div>
-                <h4 class="text-xs sm:text-sm font-bold text-amber-950">ตั้งค่าเป้าหมายผลสัมฤทธิ์ทางการเรียน (KPI สถานศึกษา / SAR)</h4>
-                <p class="text-[11px] text-amber-800/80">กำหนดเกณฑ์ร้อยละเพื่อใช้แสดงผลและติดตามกลุ่มเป้าหมายบนหน้าแดชบอร์ด</p>
+                <h4 class="text-xs sm:text-sm font-bold text-amber-950">เป้าหมายผลสัมฤทธิ์ (SAR)</h4>
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label for="set-target-student-pct" class="block text-xs font-semibold text-slate-700 mb-1">ร้อยละเป้าหมายจำนวนนักเรียนที่ผ่านเกณฑ์ (%)</label>
+                <label for="set-target-student-pct" class="block text-xs font-semibold text-slate-700 mb-1">เป้าหมายนักเรียนผ่านเกณฑ์ (%)</label>
                 <div class="relative">
                   <input 
                     type="number" 
@@ -1843,7 +1821,7 @@
                 </div>
               </div>
               <div>
-                <label for="set-target-score-pct" class="block text-xs font-semibold text-slate-700 mb-1">เกณฑ์คะแนนร้อยละขั้นต่ำที่ต้องการ (%)</label>
+                <label for="set-target-score-pct" class="block text-xs font-semibold text-slate-700 mb-1">เกณฑ์คะแนนขั้นต่ำ (%)</label>
                 <div class="relative">
                   <input 
                     type="number" 
@@ -1862,7 +1840,7 @@
           <!-- Save Button Bar -->
           <div class="flex justify-end pt-3 border-t border-slate-100">
             <button onclick="saveGeneralSettings()" class="touch-target px-6 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 transition-all flex items-center gap-2">
-              <span>💾</span> <span>บันทึกข้อมูลทั่วไปและภาคเรียน</span>
+              <span>💾</span> <span>บันทึกการตั้งค่า</span>
             </button>
           </div>
         </div>
@@ -1875,14 +1853,11 @@
                 ⛱️
               </div>
               <div>
-                <h3 class="text-base font-bold text-rose-600">ตั้งค่าวันหยุดประจำปี</h3>
-                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  กำหนดวันหยุดราชการหรือวันหยุดโรงเรียน ระบบจะแทรกลงในรายงานประจำเดือนให้อัตโนมัติและล็อกหน้าเช็คชื่อ
-                </p>
+                <h3 class="text-base font-bold text-rose-600">วันหยุดประจำปี</h3>
               </div>
             </div>
             <button onclick="loadDefaultThaiHolidays()" class="text-xs font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3.5 py-2 rounded-xl border border-blue-200 transition-colors self-start sm:self-center shrink-0 flex items-center gap-1.5 shadow-2xs">
-              <span>✨</span> <span>โหลดวันหยุดราชการประจำปี</span>
+              <span>✨</span> <span>โหลดวันหยุดราชการ</span>
             </button>
           </div>
 
@@ -1920,17 +1895,14 @@
           </div>
         </div>
 
-        <!-- 4. กำหนดวันที่มีตารางสอนในสัปดาห์ (📅) -->
+        <!-- 4. ตารางสอนประจำสัปดาห์ (📅) -->
         <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
           <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
             <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg font-bold shrink-0">
               📅
             </div>
             <div>
-              <h3 class="text-base font-bold text-slate-900">กำหนดวันที่มีตารางสอนในสัปดาห์</h3>
-              <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                กำหนดวันในสัปดาห์ที่มีคาบเรียนจริงของแต่ละชั้นเรียน ระบบจะใช้คำนวณ "เวลาเรียนเต็ม" ตามสูตรปฏิทิน และล็อกวันอื่นให้อัตโนมัติ
-              </p>
+              <h3 class="text-base font-bold text-slate-900">ตารางสอนประจำสัปดาห์</h3>
             </div>
           </div>
 
@@ -1939,17 +1911,14 @@
           </div>
         </div>
 
-        <!-- 5. ตั้งค่าวันชดเชยการสอน (🔄) -->
+        <!-- 5. วันสอนชดเชย (🔄) -->
         <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
           <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
             <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg font-bold shrink-0">
               🔄
             </div>
             <div>
-              <h3 class="text-base font-bold text-sky-700">ตั้งค่าวันชดเชยการสอน</h3>
-              <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                กำหนดวันหยุดสุดสัปดาห์ที่มีการนัดเรียนชดเชย โดยระบบจะจำลองตารางสอนของวันที่กำหนดมาสวมทับให้อัตโนมัติ
-              </p>
+              <h3 class="text-base font-bold text-sky-700">วันสอนชดเชย</h3>
             </div>
           </div>
 
@@ -1993,7 +1962,7 @@
           </div>
         </div>
 
-        <!-- 6. สำรองข้อมูล (Backup) (💾) -->
+        <!-- 6. สำรองข้อมูล (💾) -->
         <div class="bg-gradient-to-br from-white via-white to-emerald-50/40 rounded-2xl p-6 sm:p-7 border border-emerald-200/90 shadow-xs space-y-4">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-emerald-100 pb-4">
             <div class="flex items-center gap-3">
@@ -2001,15 +1970,12 @@
                 💾
               </div>
               <div>
-                <h3 class="text-base font-bold text-emerald-900">สำรองข้อมูลทั้งหมดในระบบ (Full System Backup)</h3>
-                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  ดาวน์โหลดข้อมูลทั้งหมด (ห้องเรียน, นักเรียน, เวลาเรียน, คะแนน, โครงสร้างวิชา, ปฏิทินวันหยุด) ออกมาเป็นไฟล์ Excel (.xlsx)
-                </p>
+                <h3 class="text-base font-bold text-emerald-900">สำรองข้อมูลทั้งหมด (Excel)</h3>
               </div>
             </div>
             
-            <button onclick="exportAllSystemExcel()" class="touch-target px-6 py-3 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 self-start sm:self-center shrink-0">
-              <span>⬇️</span> <span>ดาวน์โหลดข้อมูลทั้งหมด (Excel)</span>
+            <button onclick="exportAllSystemExcel()" class="touch-target px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 self-start sm:self-center shrink-0">
+              <span>⬇️</span> <span>ดาวน์โหลด Excel</span>
             </button>
           </div>
 
@@ -2029,7 +1995,7 @@
           </div>
         </div>
 
-        <!-- 7. เชื่อมต่อ Cloud Database (Supabase Sync) (☁️) -->
+        <!-- 7. เชื่อมต่อ Cloud (Supabase) (☁️) -->
         <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
             <div class="flex items-center gap-3">
@@ -2037,19 +2003,14 @@
                 ☁️
               </div>
               <div>
-                <h3 class="text-base font-bold text-slate-900">เชื่อมต่อ Cloud Database (Supabase)</h3>
-                <p class="text-xs text-slate-500">ซิงค์ข้อมูลระหว่างเครื่องคอมพิวเตอร์และอุปกรณ์พกพาผ่านระบบ Cloud</p>
+                <h3 class="text-base font-bold text-slate-900">เชื่อมต่อ Cloud (Supabase)</h3>
               </div>
             </div>
             <div id="settings-cloud-sync-badge" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs self-start sm:self-center">
               <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-              <span id="settings-cloud-sync-text">โหมดออฟไลน์ (LocalStorage)</span>
+              <span id="settings-cloud-sync-text">ออฟไลน์</span>
             </div>
           </div>
-
-          <p class="text-xs text-slate-500 leading-relaxed">
-            ระบบทำงานได้สมบูรณ์แบบทันทีแบบ <strong>ออฟไลน์ (LocalStorage)</strong> หากต้องการสำรองหรือซิงค์ข้อมูลขึ้น Cloud สามารถระบุ Project URL และ Public Anon Key ด้านล่าง:
-          </p>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-1.5">
@@ -2114,11 +2075,8 @@
             </div>
             <div>
               <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>จัดการข้อมูลห้องเรียน</span>
+                <span>จัดการห้องเรียน</span>
               </h2>
-              <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-                เพิ่มหรือลบโครงสร้างห้องเรียน และตรวจสอบสถิติจำนวนนักเรียน ชาย/หญิง
-              </p>
             </div>
           </div>
         </div>
@@ -2126,19 +2084,20 @@
         <!-- Classroom Overview Stats -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
-            <div class="text-xs text-slate-500 font-semibold">ห้องเรียนทั้งหมด</div>
+            <div class="text-xs text-slate-500 font-semibold">ห้องเรียน</div>
             <div id="cls-stat-total-rooms" class="text-2xl font-bold text-slate-900 mt-1">0 ห้อง</div>
           </div>
           <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
-            <div class="text-xs text-slate-500 font-semibold">นักเรียนทั้งหมด</div>
+            <div class="text-xs text-slate-500 font-semibold">กำลังศึกษา</div>
             <div id="cls-stat-total-students" class="text-2xl font-bold text-blue-600 mt-1">0 คน</div>
+            <div id="cls-stat-transferred-note" class="text-[11px] text-slate-400 mt-0.5"></div>
           </div>
           <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
-            <div class="text-xs text-slate-500 font-semibold">นักเรียนชาย</div>
+            <div class="text-xs text-slate-500 font-semibold">ชาย</div>
             <div id="cls-stat-boys" class="text-2xl font-bold text-indigo-600 mt-1">0 คน</div>
           </div>
           <div class="bg-white p-4 rounded-2xl border border-slate-200/90 text-center shadow-xs">
-            <div class="text-xs text-slate-500 font-semibold">นักเรียนหญิง</div>
+            <div class="text-xs text-slate-500 font-semibold">หญิง</div>
             <div id="cls-stat-girls" class="text-2xl font-bold text-pink-600 mt-1">0 คน</div>
           </div>
         </div>
@@ -2189,11 +2148,12 @@
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="bg-slate-100/80 text-xs font-bold text-slate-600 border-b border-slate-200">
-                  <th class="py-3 px-4 w-44">ชื่อห้องเรียน</th>
-                  <th class="py-3 px-4 text-center font-bold text-slate-800 w-28">รวม (คน)</th>
-                  <th class="py-3 px-4 text-center font-semibold text-indigo-700 w-28">ชาย</th>
-                  <th class="py-3 px-4 text-center font-semibold text-pink-700 w-28">หญิง</th>
-                  <th class="py-3 px-4 text-right min-w-[200px]">จัดการข้อมูล</th>
+                  <th class="py-3 px-4 w-36">ห้องเรียน</th>
+                  <th class="py-3 px-4 text-center font-bold text-slate-800 w-28">กำลังศึกษา (คน)</th>
+                  <th class="py-3 px-4 text-center font-semibold text-indigo-700 w-20">ชาย</th>
+                  <th class="py-3 px-4 text-center font-semibold text-pink-700 w-20">หญิง</th>
+                  <th class="py-3 px-4 text-center font-semibold text-slate-500 w-24">ย้ายออก</th>
+                  <th class="py-3 px-4 text-right min-w-[180px]">จัดการ</th>
                 </tr>
               </thead>
               <tbody id="classrooms-table-body">
@@ -2220,16 +2180,13 @@
             </div>
             <div>
               <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>จัดการข้อมูลทะเบียนนักเรียน</span>
+                <span>ทะเบียนนักเรียน</span>
               </h2>
-              <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-                เพิ่ม ค้นหา หรือนำเข้าไฟล์รายชื่อนักเรียนรายห้องเรียน พร้อมตรวจจับเพศและคำนวณเลขที่อัตโนมัติ
-              </p>
             </div>
           </div>
         </div>
 
-        <!-- Target Classroom Bar (Single Source of Truth for Student Management) -->
+        <!-- Target Classroom Bar -->
         <div class="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-purple-50/40 p-4 rounded-2xl border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
@@ -2237,10 +2194,9 @@
             </div>
             <div>
               <div class="text-sm font-bold text-blue-950 flex items-center gap-2">
-                <span>ห้องเรียนเป้าหมายที่กำลังจัดการ:</span>
+                <span>กำลังจัดการ:</span>
                 <span id="student-current-target-label" class="badge-classroom text-xs font-bold">ห้อง ป.6</span>
               </div>
-              <div class="text-xs text-blue-700">การเพิ่มเดี่ยว, นำเข้าไฟล์, วางรายชื่อ และตารางข้อมูลจะผูกกับห้องนี้ทันที</div>
             </div>
           </div>
           <div class="flex items-center gap-2 self-start sm:self-center">
@@ -3091,6 +3047,6 @@
   </nav>
 
     <!-- Main JavaScript Controller -->
-  <script src="app.js?v=20261118a"></script>
+  <script src="app.js?v=20261119a"></script>
 </body>
 </html>
