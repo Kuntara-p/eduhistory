@@ -412,16 +412,16 @@ const DEFAULT_SETTINGS = {
   ],
   teachingSchedule: {
     'history': {
-      'ป.6': ['วันพฤหัสบดี'],
-      'ป.5': ['วันพฤหัสบดี'],
-      'ป.4': ['วันพุธ'],
-      'ป.3': ['วันอังคาร']
+      'ป.6': { '1': ['วันพฤหัสบดี'], '2': ['วันศุกร์'] },
+      'ป.5': { '1': ['วันพฤหัสบดี'], '2': ['วันพฤหัสบดี'] },
+      'ป.4': { '1': ['วันพุธ'], '2': ['วันพุธ'] },
+      'ป.3': { '1': ['วันอังคาร'], '2': ['วันอังคาร'] }
     },
     'social': {
-      'ป.6': ['วันอังคาร', 'วันพฤหัสบดี'],
-      'ป.5': ['วันจันทร์', 'วันพุธ'],
-      'ป.4': ['วันอังคาร', 'วันพฤหัสบดี'],
-      'ป.3': ['วันพุธ', 'วันศุกร์']
+      'ป.6': { '1': ['วันอังคาร', 'วันพฤหัสบดี'], '2': ['วันอังคาร', 'วันพฤหัสบดี'] },
+      'ป.5': { '1': ['วันจันทร์', 'วันพุธ'], '2': ['วันจันทร์', 'วันพุธ'] },
+      'ป.4': { '1': ['วันอังคาร', 'วันพฤหัสบดี'], '2': ['วันอังคาร', 'วันพฤหัสบดี'] },
+      'ป.3': { '1': ['วันพุธ', 'วันศุกร์'], '2': ['วันพุธ', 'วันศุกร์'] }
     }
   }
 };
@@ -1518,6 +1518,19 @@ window.changeAttendanceDayOffset = function(offset) {
   const nextDateStr = d.toISOString().split('T')[0];
   window.goToAttendanceDate(nextDateStr);
 };
+function getGradeTeachingDays(subjKey, grade, term = '1') {
+  const s = state.settings || DEFAULT_SETTINGS;
+  const raw = s.teachingSchedule && s.teachingSchedule[subjKey] && s.teachingSchedule[subjKey][grade];
+  if (Array.isArray(raw)) return raw;
+  if (raw && typeof raw === 'object') {
+    const tKey = String(term) === '2' ? '2' : '1';
+    if (Array.isArray(raw[tKey])) return raw[tKey];
+    if (Array.isArray(raw['1'])) return raw['1'];
+    if (Array.isArray(raw['2'])) return raw['2'];
+  }
+  return [];
+}
+
 function checkDayStatus(dateStr, grade) {
   if (!dateStr) return { isNormal: true };
   const d = new Date(dateStr.includes('T') ? dateStr : (dateStr + 'T00:00:00'));
@@ -1546,20 +1559,22 @@ function checkDayStatus(dateStr, grade) {
     };
   }
 
+  const activeTerm = isTerm2 ? '2' : '1';
+  const subjKey = state.currentSubjectKey || 'history';
+  const schedList = getGradeTeachingDays(subjKey, grade, activeTerm);
+
   const holiday = (state.settings.holidays || []).find(h => h.date === dateStr);
   if (holiday) return { isHoliday: true, name: holiday.name };
   const makeup = (state.settings.makeupDays || []).find(m => m.date === dateStr);
   if (makeup) {
-    const subjKey = state.currentSubjectKey || 'history';
-    const schedList = (state.settings && state.settings.teachingSchedule && state.settings.teachingSchedule[subjKey] && state.settings.teachingSchedule[subjKey][grade]) || null;
-    if (schedList && Array.isArray(schedList) && schedList.length > 0) {
+    if (schedList && schedList.length > 0) {
       if (schedList.includes(makeup.useDaySchedule)) {
         return { isMakeup: true, useDaySchedule: makeup.useDaySchedule };
       } else {
         return { 
           isNoTeaching: true, 
           dayOfWeek: makeup.useDaySchedule, 
-          reason: `วันชดเชยตาราง${makeup.useDaySchedule} (ชั้น ${grade} ไม่มีคาบสอนใน${makeup.useDaySchedule})` 
+          reason: `วันชดเชยตาราง${makeup.useDaySchedule} (ชั้น ${grade} เทอม ${activeTerm} ไม่มีคาบสอนใน${makeup.useDaySchedule})` 
         };
       }
     }
@@ -1576,15 +1591,13 @@ function checkDayStatus(dateStr, grade) {
     };
   }
 
-  // ตรวจสอบตารางสอนประจำสัปดาห์ของวิชานี้ในชั้นเรียนนี้
-  const subjKey = state.currentSubjectKey || 'history';
-  const schedList = (state.settings && state.settings.teachingSchedule && state.settings.teachingSchedule[subjKey] && state.settings.teachingSchedule[subjKey][grade]) || null;
-  if (schedList && Array.isArray(schedList) && schedList.length > 0) {
+  // ตรวจสอบตารางสอนประจำสัปดาห์ของวิชานี้ในชั้นเรียนนี้ตามภาคเรียน
+  if (schedList && schedList.length > 0) {
     if (!schedList.includes(dayName)) {
       return { 
         isNoTeaching: true, 
         dayOfWeek: dayName, 
-        reason: `ไม่มีตารางสอนวิชา${subjKey === 'history' ? 'ประวัติศาสตร์' : 'สังคมศึกษา'}ใน${dayName}` 
+        reason: `ไม่มีตารางสอนวิชา${subjKey === 'history' ? 'ประวัติศาสตร์' : 'สังคมศึกษา'} (เทอม ${activeTerm}) ใน${dayName}` 
       };
     }
   }
@@ -2464,12 +2477,13 @@ function renderMonthlyAttendanceTab() {
       title = `วันที่ ${d} (${dayShort}) - คาบเรียนปกติ`;
     }
 
-    const isDayRecorded = isTeachingDay && activeStudents.some(st => state.attendance[dateStr] && state.attendance[dateStr][st.id] !== undefined);
+    const hasRecordedData = activeStudents.some(st => state.attendance[dateStr] && state.attendance[dateStr][st.id] !== undefined);
+    const isDayRecorded = hasRecordedData;
     if (isDayRecorded) {
       totalTaughtPeriods++;
     }
 
-    daysMeta.push({ day: d, dateStr, dayShort, isWeekend, isTeachingDay, isDayRecorded, cellType, title });
+    daysMeta.push({ day: d, dateStr, dayShort, isWeekend, isTeachingDay, isDayRecorded, hasRecordedData, cellType, title });
   }
 
   // 4. Calculate Aggregate Stats
@@ -2483,7 +2497,7 @@ function renderMonthlyAttendanceTab() {
     let p = 0, a = 0, l = 0, s = 0;
     if (!isTransferred) {
       daysMeta.forEach(dm => {
-        if (dm.isTeachingDay) {
+        if (dm.isTeachingDay || dm.hasRecordedData) {
           const record = state.attendance[dm.dateStr] && state.attendance[dm.dateStr][student.id];
           if (record === 'มา') p++;
           else if (record === 'ขาด') a++;
@@ -2582,16 +2596,16 @@ function renderMonthlyAttendanceTab() {
       `;
 
       daysMeta.forEach(dm => {
-        if (dm.isWeekend) {
+        const status = !isTransferred && state.attendance[dm.dateStr] && state.attendance[dm.dateStr][student.id];
+        if (!status && dm.isWeekend) {
           html += `<td class="matrix-cell matrix-cell-weekend" title="${dm.title}">-</td>`;
-        } else if (dm.cellType === 'holiday') {
+        } else if (!status && dm.cellType === 'holiday') {
           html += `<td class="matrix-cell matrix-cell-blocked bg-amber-50/70 text-amber-700" title="${dm.title}">⛱️</td>`;
-        } else if (dm.cellType === 'noTeaching') {
+        } else if (!status && dm.cellType === 'noTeaching') {
           html += `<td class="matrix-cell matrix-cell-blocked" title="${dm.title}">🚫</td>`;
         } else if (isTransferred) {
           html += `<td class="matrix-cell text-slate-300 bg-slate-50/50 cursor-not-allowed" title="${student.name} (ย้ายออกแล้ว)">-</td>`;
         } else {
-          const status = state.attendance[dm.dateStr] && state.attendance[dm.dateStr][student.id];
           let symbol = '-';
           let badgeColor = 'text-slate-300 font-normal';
           if (status === 'มา') {
@@ -2767,6 +2781,29 @@ window.goToAttendanceDate = function(dateStr) {
   const thaiInfo = formatThaiDateFullDay(dateStr);
   showNotification(`เปลี่ยนไปวันที่ ${thaiInfo.day} ${thaiInfo.month} ${thaiInfo.year} (${thaiInfo.dayName}) เพื่อเช็คชื่อแล้ว`);
 };
+function getRecordedDatesForPeriod(term, activeStudents) {
+  const s = state.settings || DEFAULT_SETTINGS;
+  const t1Start = s.term1Start || '2026-05-18';
+  const t1End = s.term1End || '2026-10-12';
+  const t2Start = s.term2Start || '2026-11-02';
+  const t2End = s.term2End || '2027-03-31';
+
+  return Object.keys(state.attendance || {}).filter(dStr => {
+    const inTerm1 = dStr >= t1Start && dStr <= t1End;
+    const inTerm2 = dStr >= t2Start && dStr <= t2End;
+    if (term === '1' && !inTerm1) return false;
+    if (term === '2' && !inTerm2) return false;
+    if ((term === 'all' || term === 'year') && !inTerm1 && !inTerm2) return false;
+    return activeStudents.some(st => state.attendance[dStr] && state.attendance[dStr][st.id] !== undefined);
+  });
+}
+
+function getEvaluatedDatesForPeriod(term, grade, activeStudents) {
+  const schedDates = getTeachingDatesForPeriod(term, grade);
+  const recDates = getRecordedDatesForPeriod(term, activeStudents);
+  return Array.from(new Set([...schedDates, ...recDates])).sort();
+}
+
 function renderSemesterAttendanceTab() {
   const tbody = document.getElementById('semester-att-table-body');
   const thead = document.getElementById('sem-att-table-head');
@@ -2805,15 +2842,21 @@ function renderSemesterAttendanceTab() {
   const isAllYear = (currentTerm === 'all' || currentTerm === 'year');
   const periodLabel = isAllYear ? 'ตลอดทั้งปีการศึกษา' : `ภาคเรียนที่ ${currentTerm}`;
 
-  // เวลาเรียนเต็มตามการสอนจริง (สูตร: วันที่มีคาบสอนจริงตามปฏิทิน - วันหยุด - วันที่งดสอน + ชดเชย)
-  const teachingDates = getTeachingDatesForPeriod(currentTerm, currentGrade);
-  const teachingDatesT1 = getTeachingDatesForPeriod('1', currentGrade);
-  const teachingDatesT2 = getTeachingDatesForPeriod('2', currentGrade);
-  const totalTeachingHours = teachingDates.length;
+  const students = (state.students || [])
+    .filter(st => isStudentInClassroom(st, { grade: currentGrade, name: currentGrade, room: state.currentRoom }))
+    .sort((a, b) => Number(a.student_no) - Number(b.student_no));
+  const activeStudents = students.filter(s => s.status !== 'ย้ายออก');
 
-  // คำนวณจำนวนคาบที่มีการบันทึกการสอนจริงในช่วงเวลานี้
+  // เวลาเรียนเต็มตามการสอนจริง + วันที่บันทึกไว้แล้ว (ป้องกันข้อมูลหายเมื่อสลับตารางสอน)
+  const scheduledDates = getTeachingDatesForPeriod(currentTerm, currentGrade);
+  const teachingDates = getEvaluatedDatesForPeriod(currentTerm, currentGrade, activeStudents);
+  const teachingDatesT1 = getEvaluatedDatesForPeriod('1', currentGrade, activeStudents);
+  const teachingDatesT2 = getEvaluatedDatesForPeriod('2', currentGrade, activeStudents);
+  const totalTeachingHours = scheduledDates.length;
+
+  // คำนวณจำนวนคาบที่มีการบันทึกการสอนจริงสำหรับห้องนี้ในช่วงเวลานี้
   const actualTaughtSessions = teachingDates.filter(dStr => {
-    return state.attendance[dStr] && Object.keys(state.attendance[dStr]).length > 0;
+    return activeStudents.some(st => state.attendance[dStr] && state.attendance[dStr][st.id] !== undefined);
   }).length;
   const unrecordedCount = Math.max(0, totalTeachingHours - actualTaughtSessions);
   const isCompleted = actualTaughtSessions >= totalTeachingHours && totalTeachingHours > 0;
@@ -2875,11 +2918,6 @@ function renderSemesterAttendanceTab() {
     }
   }
 
-  const students = (state.students || [])
-    .filter(st => isStudentInClassroom(st, { grade: currentGrade, name: currentGrade, room: state.currentRoom }))
-    .sort((a, b) => Number(a.student_no) - Number(b.student_no));
-
-  const activeStudents = students.filter(s => s.status !== 'ย้ายออก');
   let normalCount = 0;
   let msCount = 0;
 
@@ -3132,16 +3170,18 @@ window.exportSemesterAttendanceExcel = function() {
   const periodLabel = isAllYear ? 'ตลอดทั้งปีการศึกษา' : `ภาคเรียนที่ ${currentTerm}`;
   const fileNameTerm = isAllYear ? 'ทั้งปีการศึกษา' : `เทอม${currentTerm}`;
 
-  const curriculumFullHours = getCurriculumHoursForPeriod(currentTerm);
-  const teachingDates = getTeachingDatesForPeriod(currentTerm, currentGrade);
-  const teachingDatesT1 = getTeachingDatesForPeriod('1', currentGrade);
-  const teachingDatesT2 = getTeachingDatesForPeriod('2', currentGrade);
-
-  const actualTaughtSessions = teachingDates.filter(dStr => state.attendance[dStr] && Object.keys(state.attendance[dStr]).length > 0).length;
-
   const students = (state.students || [])
     .filter(st => isStudentInClassroom(st, { grade: currentGrade, name: currentGrade, room: state.currentRoom }))
     .sort((a, b) => Number(a.student_no) - Number(b.student_no));
+  const activeStudents = students.filter(s => s.status !== 'ย้ายออก');
+
+  const curriculumFullHours = getCurriculumHoursForPeriod(currentTerm);
+  const scheduledDates = getTeachingDatesForPeriod(currentTerm, currentGrade);
+  const teachingDates = getEvaluatedDatesForPeriod(currentTerm, currentGrade, activeStudents);
+  const teachingDatesT1 = getEvaluatedDatesForPeriod('1', currentGrade, activeStudents);
+  const teachingDatesT2 = getEvaluatedDatesForPeriod('2', currentGrade, activeStudents);
+
+  const actualTaughtSessions = teachingDates.filter(dStr => activeStudents.some(st => state.attendance[dStr] && state.attendance[dStr][st.id] !== undefined)).length;
 
   const headers = isAllYear ? [
     'เลขที่', 'รหัสนักเรียน', 'ชื่อ - สกุล', 
@@ -6931,78 +6971,88 @@ function renderTeachingScheduleSettings() {
 
   if (!state.settings.teachingSchedule) state.settings.teachingSchedule = {};
   if (!state.settings.teachingSchedule[subjKey]) state.settings.teachingSchedule[subjKey] = {};
+
+  const renderTermRow = (grade, termKey, label, scheduledDays, hoursCount, badgeClass) => `
+    <div class="space-y-1.5 bg-white p-2.5 rounded-xl border border-slate-200/80">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-bold ${badgeClass}">${label}</span>
+        <span class="text-[11px] font-bold text-slate-700">${hoursCount} คาบ</span>
+      </div>
+      <div class="grid grid-cols-5 gap-1">
+        ${days.map(d => {
+          const isSelected = scheduledDays.includes(d.key);
+          return `
+            <button 
+              type="button" 
+              onclick="toggleTeachingScheduleDay('${grade}', '${d.key}', '${termKey}')" 
+              title="${label}: ${d.key}"
+              class="touch-target py-1.5 px-1 rounded-lg text-xs font-semibold text-center transition-all cursor-pointer ${
+                isSelected 
+                  ? (termKey === '1' ? 'bg-blue-600 text-white shadow-xs' : 'bg-emerald-600 text-white shadow-xs') 
+                  : 'bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100'
+              }"
+            >
+              ${d.short}
+            </button>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
   container.innerHTML = grades.map(grade => {
-    const scheduledDays = state.settings.teachingSchedule[subjKey][grade] || [];
+    const t1Days = getGradeTeachingDays(subjKey, grade, '1');
+    const t2Days = getGradeTeachingDays(subjKey, grade, '2');
     const t1Hours = getTeachingDatesForPeriod('1', grade).length;
     const t2Hours = getTeachingDatesForPeriod('2', grade).length;
     const totalHours = t1Hours + t2Hours;
 
     return `
-      <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col justify-between space-y-3 shadow-2xs hover:border-blue-200 transition-colors">
-        <div>
-          <div class="flex items-center justify-between">
+      <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 flex flex-col justify-between space-y-3 shadow-2xs hover:border-blue-200 transition-colors">
+        <div class="flex items-center justify-between">
+          <div>
             <h4 class="font-bold text-sm text-slate-900">ชั้น ${grade}</h4>
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${scheduledDays.length > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'}">
-              สอน ${scheduledDays.length} วัน/สัปดาห์
-            </span>
+            <p class="text-[11px] text-slate-500">${subjName}</p>
           </div>
-          <p class="text-xs text-slate-500 mt-1">${subjName}</p>
+          <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+            รวม ${totalHours} คาบ/ปี
+          </span>
         </div>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-slate-600 block">วันที่มีคาบสอน:</label>
-          <div class="grid grid-cols-5 gap-1">
-            ${days.map(d => {
-              const isSelected = scheduledDays.includes(d.key);
-              return `
-                <button 
-                  type="button" 
-                  onclick="toggleTeachingScheduleDay('${grade}', '${d.key}')" 
-                  title="${d.key}"
-                  class="touch-target py-1.5 px-1 rounded-lg text-xs font-semibold text-center transition-all cursor-pointer ${
-                    isSelected 
-                      ? 'bg-blue-600 text-white shadow-xs' 
-                      : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-100'
-                  }"
-                >
-                  ${d.short}
-                </button>
-              `;
-            }).join('')}
-          </div>
-        </div>
-
-        <div class="pt-2 border-t border-slate-200/80 text-xs text-slate-600 space-y-1">
-          <div class="flex justify-between">
-            <span>เวลาเรียนเต็ม (เทอม 1):</span>
-            <span class="font-bold text-slate-800">${t1Hours} คาบ</span>
-          </div>
-          <div class="flex justify-between">
-            <span>เวลาเรียนเต็ม (เทอม 2):</span>
-            <span class="font-bold text-slate-800">${t2Hours} คาบ</span>
-          </div>
-          <div class="flex justify-between font-semibold text-blue-700 pt-0.5 border-t border-slate-200/50">
-            <span>รวมทั้งปี:</span>
-            <span>${totalHours} คาบ</span>
-          </div>
+        <div class="space-y-2">
+          ${renderTermRow(grade, '1', 'ภาคเรียนที่ 1', t1Days, t1Hours, 'text-blue-700')}
+          ${renderTermRow(grade, '2', 'ภาคเรียนที่ 2', t2Days, t2Hours, 'text-emerald-700')}
         </div>
       </div>
     `;
   }).join('');
 }
 
-window.toggleTeachingScheduleDay = function(grade, dayName) {
+window.toggleTeachingScheduleDay = function(grade, dayName, term = '1') {
   const subjKey = state.currentSubjectKey || 'history';
+  const termKey = String(term) === '2' ? '2' : '1';
   if (!state.settings.teachingSchedule) state.settings.teachingSchedule = {};
   if (!state.settings.teachingSchedule[subjKey]) state.settings.teachingSchedule[subjKey] = {};
-  if (!Array.isArray(state.settings.teachingSchedule[subjKey][grade])) {
-    state.settings.teachingSchedule[subjKey][grade] = [];
+
+  const existing = state.settings.teachingSchedule[subjKey][grade];
+  if (Array.isArray(existing)) {
+    state.settings.teachingSchedule[subjKey][grade] = {
+      '1': [...existing],
+      '2': [...existing]
+    };
+  } else if (!existing || typeof existing !== 'object') {
+    state.settings.teachingSchedule[subjKey][grade] = { '1': [], '2': [] };
   }
-  const list = state.settings.teachingSchedule[subjKey][grade];
+
+  if (!Array.isArray(state.settings.teachingSchedule[subjKey][grade][termKey])) {
+    state.settings.teachingSchedule[subjKey][grade][termKey] = [];
+  }
+
+  const list = state.settings.teachingSchedule[subjKey][grade][termKey];
   const idx = list.indexOf(dayName);
   if (idx > -1) {
     if (list.length === 1) {
-      if (!confirm(`คุณกำลังจะปิดวันสอนทั้งหมดของชั้น ${grade} ต้องการดำเนินการหรือไม่?`)) return;
+      if (!confirm(`ต้องการปิดวันสอนทั้งหมดของชั้น ${grade} (เทอม ${termKey}) หรือไม่?`)) return;
     }
     list.splice(idx, 1);
   } else {
@@ -7010,7 +7060,7 @@ window.toggleTeachingScheduleDay = function(grade, dayName) {
   }
   saveLocalData();
   renderTeachingScheduleSettings();
-  showNotification(`อัปเดตตารางสอนชั้น ${grade} เรียบร้อยแล้ว`);
+  showNotification(`อัปเดตตารางสอนชั้น ${grade} (เทอม ${termKey}) แล้ว`);
 };
 // ------------------------------------------
 // Settings Actions
@@ -7183,8 +7233,16 @@ window.exportAllSystemExcel = function() {
     Object.keys(s.teachingSchedule).forEach(subj => {
       const subjName = subj === 'history' ? 'วิชาประวัติศาสตร์' : 'วิชาสังคมศึกษา';
       Object.keys(s.teachingSchedule[subj]).forEach(grade => {
-        const days = s.teachingSchedule[subj][grade];
-        schedRows.push(['ตารางสอนประจำสัปดาห์', `${subjName} ชั้น ${grade}`, (days && days.length > 0) ? days.join(', ') : 'ไม่มีตารางสอน']);
+        const raw = s.teachingSchedule[subj][grade];
+        let desc = 'ไม่มีตารางสอน';
+        if (Array.isArray(raw)) {
+          desc = raw.length > 0 ? raw.join(', ') : 'ไม่มีตารางสอน';
+        } else if (raw && typeof raw === 'object') {
+          const t1 = Array.isArray(raw['1']) && raw['1'].length > 0 ? raw['1'].join(', ') : '-';
+          const t2 = Array.isArray(raw['2']) && raw['2'].length > 0 ? raw['2'].join(', ') : '-';
+          desc = `เทอม 1: ${t1} | เทอม 2: ${t2}`;
+        }
+        schedRows.push(['ตารางสอนประจำสัปดาห์', `${subjName} ชั้น ${grade}`, desc]);
       });
     });
   }
