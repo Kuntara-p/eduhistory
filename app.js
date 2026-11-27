@@ -42,7 +42,7 @@ const CURRICULUM_DATA = {
       {
         unitNo: 2,
         name: 'ประเทศเพื่อนบ้านของไทย',
-        semester: 'ภาคเรียนที่ 1 - 2',
+        semester: 'ภาคเรียนที่ 1',
         semesterKey: '1',
         hours: 17,
         score: 20,
@@ -1219,10 +1219,11 @@ function getActiveUnitsForSemester(sem) {
   const targetSem = sem || 'all';
   const units = getActiveUnits();
   return units.filter(u => {
-    return targetSem === 'all' || 
-           u.semesterKey === targetSem || 
-           u.semesterKey === 'both' || 
-           (u.semester && u.semester.includes(targetSem));
+    if (targetSem === 'all') return true;
+    if (u.semesterKey) {
+      return u.semesterKey === String(targetSem) || u.semesterKey === 'both';
+    }
+    return Boolean(u.semester && u.semester.includes(String(targetSem)));
   }).map(u => {
     const weight = getUnitWeightScore(u);
     const indicators = (u.indicators || []).map(ind => ({
